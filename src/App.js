@@ -1,56 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { STARDOG_URL, STARDOG_USERNAME, STARDOG_PASSWORD } from './config';
+import React, { useState } from 'react';
+import useFetchData from './components/useFetchData';
+import QueryInput from './components/QueryInput';
+import DataList from './components/DataList';
 
 const App = () => {
-  const [data, setData] = useState([]);
-  const [error, setError] = useState(null);
+  const [query, setQuery] = useState(''); // State for user input to query data
+  const [showResults, setShowResults] = useState(true); // State to control initial display of results
+  const { data, storedData, setData, error } = useFetchData();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.post(
-          STARDOG_URL,
-          'query=SELECT * FROM <kg:data:final_merged_output> WHERE { ?s ?p ?o }',
-          {
-            auth: {
-              username: STARDOG_USERNAME,
-              password: STARDOG_PASSWORD
-            },
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'Accept': 'application/sparql-results+json'
-            }
-          }
-        );
-        if (response.data.results.bindings.length === 0) {
-          setData([]);
-        } else {
-          setData(response.data.results.bindings);
-        }
-      } catch (err) {
-        setError(err.message);
-      }
-    };
+  // Function to filter stored data based on query input
+  const queryData = (input) => {
+    return storedData.filter(
+      (item) =>
+        item.s.value.includes(input) ||
+        item.p.value.includes(input) ||
+        item.o.value.includes(input)
+    );
+  };
 
-    fetchData();
-  }, []);
-  // Display results used before creating front end
+  // Handle input change and query stored data
+  const handleQueryChange = (e) => {
+    const input = e.target.value;
+    setQuery(input);
+
+    // Only show results after a query is made
+    if (input.length > 0) {
+      setShowResults(true);
+      setData(queryData(input)); // Update displayed data based on query
+    } else {
+      setShowResults(false); // Hide results if input is cleared
+    }
+  };
+
   return (
     <div>
       <h1>Stardog Query Results</h1>
       {error && <p>Connection failed: {error}</p>}
-      {data.length === 0 ? (
-        <p>No data found.</p>
-      ) : (
-        <ul>
-          {data.map((result, index) => (
-            <li key={index}>
-              Subject: {result.s.value}, Predicate: {result.p.value}, Object: {result.o.value}
-            </li>
-          ))}
-        </ul>
-      )}
+
+      {/* Query Input Component */}
+      <QueryInput query={query} handleQueryChange={handleQueryChange} />
+
+      {/* Conditionally render the DataList only if showResults is true */}
+      {showResults && <DataList data={data} />}
     </div>
   );
 };
