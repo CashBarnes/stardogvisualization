@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import useFetchData from './components/useFetchData';
 import QueryInput from './components/QueryInput';
 import DataList from './components/DataList';
+import Dashboard from './components/Dashboard';
 
 const App = () => {
   const [query, setQuery] = useState(''); // State for user input to query data
   const [showResults, setShowResults] = useState(false); // State to control display of results
-  const [showQueryBox, setShowQueryBox] = useState(false); // State to control query box visibility
+  const [showQueryBox, setShowQueryBox] = useState(true); // State to control query box visibility
+  const [showDashboard, setShowDashboard] = useState(true); // State to control dashboard visibility
   const { data, storedData, setData, error } = useFetchData();
 
   // Function to filter stored data based on query input
@@ -44,6 +46,9 @@ const App = () => {
 
       {/* Conditionally render the DataList only if showResults is true */}
       {showResults && <DataList data={data} />}
+
+      {/* Conditionally render the Dashboard based on showDashboard */}
+      {showDashboard && <Dashboard data={data} />}
     </div>
   );
 };
