@@ -12,7 +12,7 @@ const useFetchData = () => {
       try {
         const response = await axios.post(
           STARDOG_URL,
-          'query=SELECT * FROM <kg:data:final_merged_output> WHERE { ?s ?p ?o }',
+          'query=SELECT * WHERE { { GRAPH <kg:data:final_merged_output> { ?s ?p ?o . } } UNION { GRAPH <kg:data:JoinedData> { ?s ?p ?o . } } }',
           {
             auth: {
               username: STARDOG_USERNAME,
@@ -24,20 +24,22 @@ const useFetchData = () => {
             }
           }
         );
-        if (response.data.results.bindings.length === 0) {
-          setData([]);
-          setStoredData([]); // Clear stored data if no results
-        } else {
+
+        if (response.data.results && response.data.results.bindings) {
           setData(response.data.results.bindings);
-          setStoredData(response.data.results.bindings); // Store fetched data in memory
+          setStoredData(response.data.results.bindings); // Store data in memory
+        } else {
+          setData([]); // No data found
+          setStoredData([]); // Clear stored data
         }
       } catch (err) {
-        setError(err.message);
+        setError(err.message); // Handle connection errors
       }
     };
 
     fetchData();
   }, []);
+
 
   return { data, storedData, setData, error };
 };
