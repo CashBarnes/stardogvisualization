@@ -11,6 +11,42 @@ const Dashboard = ({ data }) => {
   const [targetFilterText, setTargetFilterText] = useState('');
   const [reportFilterText, setReportFilterText] = useState('');
 
+  const handleSourceInputChange = (e) => {
+    setSourceFilterText(e.target.value);    
+  };
+
+  const handleTargetInputChange = (e) => {
+    setTargetFilterText(e.target.value);    
+  };
+
+  const handleReportInputChange = (e) => {
+    setReportFilterText(e.target.value);    
+  };
+
+  const sampleData = {
+    label: "Root",
+    items: [
+      {
+        label: "Item1",
+        items: [
+          {
+            label: "Subitem1",
+            items: [] // No nested items under Subitem1, so we set the 'items' array to an empty array.
+          },
+          {
+            label: "Subitem2",
+            items: [
+              {
+                label: "Subsubitem1",
+                items: [], // No nested items under Subsubitem1 as well.
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
   useEffect(() => {
     // Use Sets to ensure unique counts
     const uniqueSourceSystems = new Set();
@@ -58,7 +94,7 @@ const Dashboard = ({ data }) => {
             label1 = '0 Tables'
             label2 = '0 Fields'
             filterText={sourceFilterText}
-            onFilterTextChange={setSourceFilterText}
+            onFilterTextChange={handleSourceInputChange}
             />
           </td>
           <td>
@@ -66,7 +102,7 @@ const Dashboard = ({ data }) => {
             header={targetSystemsCount + ' Target Systems'}
             label2 = '0 Data Elements'
             filterText={targetFilterText}
-            onFilterTextChange={setTargetFilterText}
+            onFilterTextChange={handleTargetInputChange}
             />
           </td>
           <td>
@@ -75,7 +111,7 @@ const Dashboard = ({ data }) => {
             label1 = '0 Sections'
             label2 = '0 Key Business Elements'
             filterText={reportFilterText}
-            onFilterTextChange={setReportFilterText}
+            onFilterTextChange={handleReportInputChange}
             />
           </td>
         </tr>
