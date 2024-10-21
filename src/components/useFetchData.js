@@ -13,7 +13,7 @@ const useFetchData = () => {
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-            SELECT * WHERE {
+            SELECT DISTINCT * WHERE {
               { 
                 GRAPH <kg:data:final_merged_output> { 
                   ?s rdf:type ?s_type ; rdfs:label ?s_label ; ?p ?o . 

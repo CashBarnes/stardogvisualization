@@ -20,6 +20,7 @@ const Dashboard = ({ data }) => {
   const [sourceFieldsCount, setSourceFieldsCount] = useState(0); // To count Source Fields
   const [reportSectionsCount, setReportSectionsCount] = useState(0); // To count Report Sections
   const [keyBusinessElementsCount, setKeyBusinessElementsCount] = useState(0); // To count KeyBusinessElements
+  const [targetFieldCount, setTargetFieldCount] = useState(0);
 
   useEffect(() => {
     const uniqueSourceSystems = new Map(); // Map for Source Systems and their Tables
@@ -30,8 +31,8 @@ const Dashboard = ({ data }) => {
     let totalSourceFields = 0;
     let totalReportSections = 0;
     let totalKeyBusinessElements = 0;
+    let totalTargetFields = 0;
 
-    // Iterate through the data to filter and count unique systems, reports, sections, and elements
     data.forEach((item) => {
       // Identify Source Systems and their Tables
       if (item.s.value.startsWith('kg:data:DataSource') && item.p.value === 'tag:stardog:designer:Knowledge_Graph_Demo:model:name') {
@@ -42,7 +43,9 @@ const Dashboard = ({ data }) => {
           });
         }
       }
+    });
 
+    data.forEach((item) => {
       // Match tables (SourceSchemas) to Source Systems using 'kg:model:inSourceSystem'
       if (item.p.value === 'kg:model:inSourceSystem') {
         const table = decodeURIComponent(item.s.value.split(':').pop()); // Extract the table name from URI
@@ -56,7 +59,9 @@ const Dashboard = ({ data }) => {
           totalSourceTables++; // Increment Source Tables count
         }
       }
+    });
 
+    data.forEach((item) => {
       // Match fields (SourceFields) to Source Tables using 'kg:model:inSchema'
       if (item.p.value === 'kg:model:inSchema') {
         const field = decodeURIComponent(item.s.value.split(':').pop()); // Extract the field name from URI
@@ -70,7 +75,9 @@ const Dashboard = ({ data }) => {
         sourceTableFieldMapping.get(sourceTableUri).push(field);
         totalSourceFields++; // Increment Source Fields count
       }
+    });
 
+    data.forEach((item) => {
       // Identify Reports and their Sections using 'hasSection'
       if (item.s.value.startsWith('kg:data:Report') && item.p.value === 'tag:stardog:designer:Knowledge_Graph_Demo:model:hasSection') {
         const report = decodeURIComponent(item.s.value.split(':').pop());
@@ -90,41 +97,48 @@ const Dashboard = ({ data }) => {
 
         totalReportSections++; // Increment Report Sections count
       }
+    });
 
+    data.forEach((item) => {
       // Match Report Sections to Key Business Elements using 'hasKeyBusinessElement'
       if (item.p.value === 'tag:stardog:designer:Knowledge_Graph_Demo:model:hasKeyBusinessElement') {
         const section = decodeURIComponent(item.s.value.split(':').pop()); // Extract the section name from URI
-        const kbe = decodeURIComponent(item.o.value.split(':').pop()); // Extract the KBE name from URI
+        const kbeURI = item.o.value; // Extract the KBE name from URI
+        const kbeNode = data.find(kbe => (kbe.s.value === kbeURI))
 
         uniqueReports.forEach((report) => {
           report.sections.forEach((sectionObj) => {
             if (sectionObj.name === section) {
-              sectionObj.kbes.push(kbe);
+              sectionObj.kbes.push(kbeNode.s_label.value);
             }
           });
         });
 
         totalKeyBusinessElements++; // Increment Key Business Elements count
       }
+    });
 
+    data.forEach((item) => {
       // Identify Target Systems
       if (item.s.value.startsWith('kg:data:TargetSystem') && item.p.value === 'tag:stardog:designer:Knowledge_Graph_Demo:model:name') {
         if (!uniqueTargetSystems.has(item.s.value)) {
           uniqueTargetSystems.set(item.s.value, {
             name: decodeURIComponent(item.o.value),
-            kbes: [] // Initialize an array for Key Business Elements (KBEs)
+            targetFields: [] // Initialize an array for Key Business Elements (KBEs)
           });
         }
       }
+    });
 
-      // Match Target Systems to Key Business Elements using 'feedsKBE'
-      if (item.p.value === 'kg:model:feedsKBE') {
-        const targetSystemUri = item.s.value;
-        const kbe = decodeURIComponent(item.o.value.split(':').pop()); // Extract the KBE name from URI
+    data.forEach((item) => {
+      // Match Target Systems to Key Business Elements using 'inTargetSystem'
+      if (item.p.value === 'kg:model:inTargetSystem') {
+        const targetSystemUri = item.o.value;
+        const targetField = decodeURIComponent(item.s.value.split(':').pop()); // Extract the KBE name from URI
 
         if (uniqueTargetSystems.has(targetSystemUri)) {
-          uniqueTargetSystems.get(targetSystemUri).kbes.push(kbe); // Add KBEs under their respective Target System
-          totalKeyBusinessElements++; // Increment Key Business Elements count for Target Systems
+          uniqueTargetSystems.get(targetSystemUri).targetFields.push(targetField); // Add KBEs under their respective Target System
+          totalTargetFields++; // Increment Key Business Elements count for Target Systems
         }
       }
     });
@@ -153,14 +167,16 @@ const Dashboard = ({ data }) => {
     setSourceFieldsCount(totalSourceFields); // Set total Source Fields count
     setReportSectionsCount(totalReportSections); // Set total Report Sections count
     setKeyBusinessElementsCount(totalKeyBusinessElements); // Set total KBE count
+    setTargetFieldCount(totalTargetFields); // Set total Target Fields count
   }, [data]);
 
   // Function to toggle dropdown for source systems
   const toggleSourceSystemDropdown = (system) => {
-    setExpandedSourceSystems((prevState) => ({
+    setExpandedSourceSystems((prevState) => {
+      return({
       ...prevState,
       [system]: !prevState[system], // Toggle the expanded state
-    }));
+    })});
   };
 
   // Function to toggle dropdown for source tables
@@ -287,16 +303,16 @@ const Dashboard = ({ data }) => {
             placeholder="Search Target Systems"
             style={{ marginBottom: '10px', width: '100%' }}
           />
-          <p>Data Elements: {keyBusinessElementsCount}</p>
+          <p>Target Fields: {targetFieldCount}</p>
           <ul>
             {filteredTargetSystems.map((system, index) => (
               <li key={index}>
                 <span onClick={() => toggleTargetSystemDropdown(system.name)} style={{ cursor: 'pointer' }}>
                   {expandedTargetSystems[system.name] ? '▼' : '►'} {system.name}
                 </span>
-                {expandedTargetSystems[system.name] && system.kbes.length > 0 && (
+                {expandedTargetSystems[system.name] && system.targetFields.length > 0 && (
                   <ul style={{ paddingLeft: '20px', listStyleType: 'none' }}>
-                    {system.kbes.map((kbe, idx) => (
+                    {system.targetFields.map((kbe, idx) => (
                       <li key={idx} style={{ paddingLeft: '10px' }}>
                         {kbe}
                       </li>

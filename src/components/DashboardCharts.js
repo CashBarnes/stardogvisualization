@@ -14,26 +14,34 @@ const DashboardCharts = ({ data }) => {
 
     // Iterate through the data to count frequency and push/pull values
     data.forEach((item) => {
+      let existingNodesFrequency = [];
+      let existingNodesPushPull = [];
       // Check for frequency values
       if (item.p.value === 'kg:model:frequency') {
-        const frequencyValue = item.o.value.toLowerCase();
-        if (frequencyValue === 'daily') {
-          dailyCount++;
-        } else if (frequencyValue === 'monthly') {
-          monthlyCount++;
-        } else if (frequencyValue === 'quarterly') {
-          quarterlyCount++;
+        if(!existingNodesFrequency.includes(item.s.value)) {
+          const frequencyValue = item.o.value.toLowerCase();
+          if (frequencyValue === 'daily') {
+            dailyCount++;
+          } else if (frequencyValue === 'monthly') {
+            monthlyCount++;
+          } else if (frequencyValue === 'quarterly') {
+            quarterlyCount++;
+          }
         }
+        existingNodesFrequency.push(item.s.value);
       }
 
       // Check for push/pull values
-      if (item.p.value === 'kg:model:pushPull') {
-        const pushPullValue = item.o.value.toLowerCase();
-        if (pushPullValue === 'push') {
-          pushCount++;
-        } else if (pushPullValue === 'pull') {
-          pullCount++;
-        }
+        if (item.p.value === 'kg:model:pushPull') {
+          if(!existingNodesPushPull.includes(item.s.value)) {
+            const pushPullValue = item.o.value.toLowerCase();
+            if (pushPullValue === 'push') {
+              pushCount++;
+            } else if (pushPullValue === 'pull') {
+              pullCount++;
+            }
+          }
+          existingNodesPushPull.push(item.s.value);
       }
     });
 
