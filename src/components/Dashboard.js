@@ -38,6 +38,7 @@ const Dashboard = ({ data }) => {
       if (item.s.value.startsWith('kg:data:DataSource') && item.p.value === 'tag:stardog:designer:Knowledge_Graph_Demo:model:name') {
         if (!uniqueSourceSystems.has(item.s.value)) {
           uniqueSourceSystems.set(item.s.value, {
+            uri: item.s.value,
             name: decodeURIComponent(item.o.value), // Decode URI components
             tables: [] // Initialize the array for tables
           });
@@ -109,7 +110,7 @@ const Dashboard = ({ data }) => {
         uniqueReports.forEach((report) => {
           report.sections.forEach((sectionObj) => {
             if (sectionObj.name === section) {
-              sectionObj.kbes.push(kbeNode.s_label.value);
+              sectionObj.kbes.push({ uri: kbeNode.s.value, name: kbeNode.s_label.value });
             }
           });
         });
@@ -123,6 +124,7 @@ const Dashboard = ({ data }) => {
       if (item.s.value.startsWith('kg:data:TargetSystem') && item.p.value === 'tag:stardog:designer:Knowledge_Graph_Demo:model:name') {
         if (!uniqueTargetSystems.has(item.s.value)) {
           uniqueTargetSystems.set(item.s.value, {
+            uri: item.s.value,
             name: decodeURIComponent(item.o.value),
             targetFields: [] // Initialize an array for Key Business Elements (KBEs)
           });
@@ -212,6 +214,33 @@ const Dashboard = ({ data }) => {
   };
 
   // Handle search input change to filter Source Systems
+  // const handleSearchSourceChange = (e) => {
+  //   const input = e.target.value.toLowerCase();
+  //   setSearchTermSource(input);
+  //   const filteredSources = sourceSystems.filter((system) =>
+  //     system.name.toLowerCase().includes(input)
+  //   );
+  //   setFilteredSourceSystems(filteredSources);
+  //
+  //   // Filter Target Systems based on selected Source System's fields
+  //   const relevantFields = filteredSources.flatMap((system) =>
+  //     system.tables.flatMap((table) => table.fields)
+  //   );
+  //   const filteredTargets = targetSystems.filter((target) =>
+  //     target.targetFields.some((field) => relevantFields.includes(field))
+  //   );
+  //   setFilteredTargetSystems(filteredTargets);
+  //
+  //   // Filter Reports based on relevant Target Systems
+  //   const relevantKBEs = filteredTargets.flatMap((target) => target.targetFields);
+  //   const filteredReportsList = reports.filter((report) =>
+  //     report.sections.some((section) =>
+  //       section.kbes.some((kbe) => relevantKBEs.includes(kbe))
+  //     )
+  //   );
+  //   setFilteredReports(filteredReportsList);
+  // };
+
   const handleSearchSourceChange = (e) => {
     const input = e.target.value.toLowerCase();
     setSearchTermSource(input);
@@ -220,6 +249,64 @@ const Dashboard = ({ data }) => {
     );
     setFilteredSourceSystems(filtered); // Update the filtered list
   };
+
+  // const handleSearchSourceChange = (e) => {
+  //   const input = e.target.value.toLowerCase();
+  //   setSearchTermSource(input);
+  //
+  //   // If the input is cleared, reset all lists to show full data
+  //   if (input === '') {
+  //     setFilteredSourceSystems(sourceSystems);
+  //     setFilteredTargetSystems(targetSystems);
+  //     setFilteredReports(reports);
+  //     return;
+  //   }
+  //
+  //   // Step 1: Filter Source Systems, Source Tables, and Source Fields
+  //   const filteredSourceSystems = sourceSystems.filter(system => {
+  //     const matchesSystem = system.name.toLowerCase().includes(input);
+  //     const matchingTables = system.tables.filter(table => {
+  //       const matchesTable = table.name.toLowerCase().includes(input);
+  //       const matchingFields = table.fields.filter(field =>
+  //         field.toLowerCase().includes(input)
+  //       );
+  //       table.filteredFields = matchingFields; // Add matching fields for display if needed
+  //       return matchesTable || matchingFields.length > 0;
+  //     });
+  //     system.filteredTables = matchingTables; // Add matching tables for display if needed
+  //     return matchesSystem || matchingTables.length > 0;
+  //   });
+  //
+  //   setFilteredSourceSystems(filteredSourceSystems);
+  //
+  //   // Step 2: Collect Source Fields from filtered Source Systems
+  //   const sourceFields = filteredSourceSystems.flatMap(system =>
+  //     system.filteredTables?.flatMap(table => table.filteredFields) || []
+  //   );
+  //
+  //   // Step 3: Filter Target Systems based on Source Fields
+  //   const filteredTargetSystems = targetSystems.filter(system =>
+  //     system.targetFields.some(targetField =>
+  //       sourceFields.includes(targetField)
+  //     )
+  //   );
+  //   setFilteredTargetSystems(filteredTargetSystems);
+  //
+  //   // Step 4: Collect Key Business Elements from filtered Target Systems
+  //   const keyBusinessElements = filteredTargetSystems.flatMap(system =>
+  //     system.targetFields
+  //   );
+  //
+  //   // Step 5: Filter Reports based on Key Business Elements in Target Systems
+  //   const filteredReports = reports.filter(report =>
+  //     report.sections.some(section =>
+  //       section.kbes.some(kbe => keyBusinessElements.includes(kbe))
+  //     )
+  //   );
+  //
+  //   setFilteredReports(filteredReports);
+  // };
+
 
   // Handle search input change to filter Target Systems
   const handleSearchTargetChange = (e) => {
@@ -235,11 +322,162 @@ const Dashboard = ({ data }) => {
   const handleSearchReportChange = (e) => {
     const input = e.target.value.toLowerCase();
     setSearchTermReports(input);
-    const filtered = reports.filter((report) =>
-      report.name.toLowerCase().includes(input)
-    );
-    setFilteredReports(filtered); // Update the filtered list
+
+    if (input === '') {
+      // Reset to full unfiltered lists when search input is cleared
+      setFilteredReports(reports);
+      setFilteredTargetSystems(targetSystems);
+      setFilteredSourceSystems(sourceSystems);
+      return;
+    }
+
+    const relevantReports = (reports ??[] ).map(report => {
+      // Check if report name matches
+      const reportMatches = report.name.toLowerCase().includes(input);
+      // Filter and map sections
+      const filteredSections = (report.sections ??[] )
+        .map(section => {
+          // Check if section name matches
+          const sectionMatches = section.name.toLowerCase().includes(input);
+          // Filter kbes that match
+          const filteredKbes = section.kbes.filter(kbe =>
+            kbe.name.toLowerCase().includes(input)
+          );
+          // Include section if:
+          // 1. Section name matches, or
+          // 2. Any KBEs match
+          if (sectionMatches || filteredKbes.length > 0) {
+            return {
+              ...section,
+              kbes: filteredKbes.length > 0 ? filteredKbes : section.kbes
+            };
+          }
+          return null;
+        })
+        .filter(Boolean); // Remove null sections
+      // Include report if:
+      // 1. Report name matches, or
+      // 2. Any sections remain after filtering
+      if (reportMatches || filteredSections.length > 0) {
+        return {
+          ...report,
+          sections: filteredSections
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+    setFilteredReports(relevantReports);
+
+    // Identify associated Target Systems from the filtered Reports
+    // const relevantTargetSystems = targetSystems.filter(system =>
+    //   system.targetFields.some(field =>
+    //     relevantReports.some(report =>
+    //       report.sections.some(section =>
+    //         section.kbes.includes(field)
+    //       )
+    //     )
+    //   )
+    // );
+
+    // console.log(relevantReports);
+
+    const relevantKBEs = relevantReports.reduce((kbes, report) =>
+      ([...kbes, ...((report?.sections ?? []).reduce((reportKBEs, section) =>
+        ([...reportKBEs, section.kbes ?? []]), []))]), []
+    )[0];
+    // console.log(relevantKBEs);
+    const relevantTargetSystems = (targetSystems ??[] ).map(system => {
+      // Check if system matches
+     const systemMatches = data.find(d =>
+      (d.s.value === system.uri &&
+         d.p.value.endsWith('feedsKBE')
+        && (relevantKBEs ??[] ).map(kbe => kbe.uri).includes(d.o.value)
+      )
+     );
+      const filteredFields = (system.targetFields ??[] ).map(field => {
+          // Check if section name matches
+          const fieldsMatches = data.find(d =>
+              (d.o.value.includes(field)
+                  && d.p.value.endsWith('builtWith')
+                  && (relevantKBEs ??[] ).map(kbe => kbe.uri).includes(d.s.value)
+              )
+          );
+          // console.log(field);
+          if (fieldsMatches) {
+            return field ;
+          }
+          return null;
+        })
+        .filter(Boolean); // Remove null fields
+      // Include report if:
+      // 1. Report name matches, or
+      // 2. Any sections remain after filtering
+      if (systemMatches || filteredFields.length > 0) {
+        return {
+          ...system,
+          targetFields: filteredFields
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+    setFilteredTargetSystems(relevantTargetSystems);
+
+    // Identify associated Source Systems from the filtered Target Systems
+    // const relevantSourceSystems = sourceSystems.filter(system =>
+    //   system.tables.some(table =>
+    //     table.fields.some(field =>
+    //       relevantTargetSystems.some(targetSystem =>
+    //         targetSystem.targetFields.includes(field)
+    //       )
+    //     )
+    //   )
+    // );
+
+    const relevantSourceSystems = (sourceSystems ??[] ).map(system => {
+      // Check if system matches
+     const systemMatches = data.find(d =>
+      (d.s.value === system.uri &&
+         d.p.value.endsWith('feedsInto')
+        && (relevantTargetSystems ??[] ).map(targetSystem => targetSystem.uri).includes(d.o.value)
+      )
+     );
+      const filteredTables = (system.tables ??[] ).map(table => {
+          // Check if section name matches
+          const tableMatches = data.find(d =>
+              (d.s.value.includes(table.name)
+                  && d.p.value.endsWith('inSourceSystem')
+                  && d.o.value.includes(system)
+              )
+          );
+          console.log(table);
+          if (tableMatches) {
+            return table ;
+          }
+          return null;
+        })
+        .filter(Boolean); // Remove null fields
+      // Include report if:
+      // 1. Report name matches, or
+      // 2. Any sections remain after filtering
+      if (systemMatches || filteredTables.length > 0) {
+        return {
+          ...system,
+          tables: filteredTables
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+
+    setFilteredSourceSystems(relevantSourceSystems);
   };
+
+
 
   return (
     <div className="dashboard-container">
@@ -262,21 +500,21 @@ const Dashboard = ({ data }) => {
           </div>
           {/* Display filtered Source Systems */}
           <ul>
-            {filteredSourceSystems.map((system, index) => (
+            {(filteredSourceSystems ??[] ).map((system, index) => (
               <li key={index}>
                 <span onClick={() => toggleSourceSystemDropdown(system.name)} style={{ cursor: 'pointer' }}>
                   {expandedSourceSystems[system.name] ? '▼' : '►'} {system.name}
                 </span>
                 {expandedSourceSystems[system.name] && system.tables.length > 0 && (
                   <ul style={{ paddingLeft: '20px', listStyleType: 'none' }}>
-                    {system.tables.map((table, idx) => (
+                    {(system.tables ??[] ).map((table, idx) => (
                       <li key={idx} style={{ paddingLeft: '10px' }}>
                         <span onClick={() => toggleSourceTableDropdown(table.name)} style={{ cursor: 'pointer' }}>
                           {expandedSourceTables[table.name] ? '▼' : '►'} {table.name}
                         </span>
                         {expandedSourceTables[table.name] && table.fields.length > 0 && (
                           <ul style={{ paddingLeft: '20px', listStyleType: 'none' }}>
-                            {table.fields.map((field, fieldIdx) => (
+                            {(table.fields ??[] ).map((field, fieldIdx) => (
                               <li key={fieldIdx} style={{ paddingLeft: '20px' }}>
                                 {field}
                               </li>
@@ -305,16 +543,16 @@ const Dashboard = ({ data }) => {
           />
           <p>Target Fields: {targetFieldCount}</p>
           <ul>
-            {filteredTargetSystems.map((system, index) => (
+            {(filteredTargetSystems ??[] ).map((system, index) => (
               <li key={index}>
                 <span onClick={() => toggleTargetSystemDropdown(system.name)} style={{ cursor: 'pointer' }}>
                   {expandedTargetSystems[system.name] ? '▼' : '►'} {system.name}
                 </span>
                 {expandedTargetSystems[system.name] && system.targetFields.length > 0 && (
                   <ul style={{ paddingLeft: '20px', listStyleType: 'none' }}>
-                    {system.targetFields.map((kbe, idx) => (
+                    {(system.targetFields ??[] ).map((field, idx) => (
                       <li key={idx} style={{ paddingLeft: '10px' }}>
-                        {kbe}
+                        {field}
                       </li>
                     ))}
                   </ul>
@@ -338,23 +576,23 @@ const Dashboard = ({ data }) => {
           <p>Report Sections: {reportSectionsCount}</p>
           <p>Data Elements: {keyBusinessElementsCount}</p>
           <ul>
-            {filteredReports.map((report, index) => (
+            {(filteredReports ??[] ).map((report, index) => (
               <li key={index}>
                 <span onClick={() => toggleReportDropdown(report.name)} style={{ cursor: 'pointer' }}>
                   {expandedReports[report.name] ? '▼' : '►'} {report.name}
                 </span>
                 {expandedReports[report.name] && report.sections.length > 0 && (
                   <ul style={{ paddingLeft: '20px', listStyleType: 'none' }}>
-                    {report.sections.map((section, idx) => (
+                    {(report.sections ??[] ).map((section, idx) => (
                       <li key={idx} style={{ paddingLeft: '10px' }}>
                         <span onClick={() => toggleReportSectionDropdown(section.name)} style={{ cursor: 'pointer' }}>
                           {expandedReportSections[section.name] ? '▼' : '►'} {section.name}
                         </span>
                         {expandedReportSections[section.name] && section.kbes.length > 0 && (
                           <ul style={{ paddingLeft: '20px', listStyleType: 'none' }}>
-                            {section.kbes.map((kbe, kbeIdx) => (
+                            {(section.kbes ??[] ).map((kbe, kbeIdx) => (
                               <li key={kbeIdx} style={{ paddingLeft: '20px' }}>
-                                {kbe}
+                                {kbe.name}
                               </li>
                             ))}
                           </ul>
