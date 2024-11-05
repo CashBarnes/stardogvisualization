@@ -213,33 +213,6 @@ const Dashboard = ({ data }) => {
     }));
   };
 
-  // Handle search input change to filter Source Systems
-  // const handleSearchSourceChange = (e) => {
-  //   const input = e.target.value.toLowerCase();
-  //   setSearchTermSource(input);
-  //   const filteredSources = sourceSystems.filter((system) =>
-  //     system.name.toLowerCase().includes(input)
-  //   );
-  //   setFilteredSourceSystems(filteredSources);
-  //
-  //   // Filter Target Systems based on selected Source System's fields
-  //   const relevantFields = filteredSources.flatMap((system) =>
-  //     system.tables.flatMap((table) => table.fields)
-  //   );
-  //   const filteredTargets = targetSystems.filter((target) =>
-  //     target.targetFields.some((field) => relevantFields.includes(field))
-  //   );
-  //   setFilteredTargetSystems(filteredTargets);
-  //
-  //   // Filter Reports based on relevant Target Systems
-  //   const relevantKBEs = filteredTargets.flatMap((target) => target.targetFields);
-  //   const filteredReportsList = reports.filter((report) =>
-  //     report.sections.some((section) =>
-  //       section.kbes.some((kbe) => relevantKBEs.includes(kbe))
-  //     )
-  //   );
-  //   setFilteredReports(filteredReportsList);
-  // };
 
   const handleSearchSourceChange = (e) => {
     const input = e.target.value.toLowerCase();
@@ -249,63 +222,6 @@ const Dashboard = ({ data }) => {
     );
     setFilteredSourceSystems(filtered); // Update the filtered list
   };
-
-  // const handleSearchSourceChange = (e) => {
-  //   const input = e.target.value.toLowerCase();
-  //   setSearchTermSource(input);
-  //
-  //   // If the input is cleared, reset all lists to show full data
-  //   if (input === '') {
-  //     setFilteredSourceSystems(sourceSystems);
-  //     setFilteredTargetSystems(targetSystems);
-  //     setFilteredReports(reports);
-  //     return;
-  //   }
-  //
-  //   // Step 1: Filter Source Systems, Source Tables, and Source Fields
-  //   const filteredSourceSystems = sourceSystems.filter(system => {
-  //     const matchesSystem = system.name.toLowerCase().includes(input);
-  //     const matchingTables = system.tables.filter(table => {
-  //       const matchesTable = table.name.toLowerCase().includes(input);
-  //       const matchingFields = table.fields.filter(field =>
-  //         field.toLowerCase().includes(input)
-  //       );
-  //       table.filteredFields = matchingFields; // Add matching fields for display if needed
-  //       return matchesTable || matchingFields.length > 0;
-  //     });
-  //     system.filteredTables = matchingTables; // Add matching tables for display if needed
-  //     return matchesSystem || matchingTables.length > 0;
-  //   });
-  //
-  //   setFilteredSourceSystems(filteredSourceSystems);
-  //
-  //   // Step 2: Collect Source Fields from filtered Source Systems
-  //   const sourceFields = filteredSourceSystems.flatMap(system =>
-  //     system.filteredTables?.flatMap(table => table.filteredFields) || []
-  //   );
-  //
-  //   // Step 3: Filter Target Systems based on Source Fields
-  //   const filteredTargetSystems = targetSystems.filter(system =>
-  //     system.targetFields.some(targetField =>
-  //       sourceFields.includes(targetField)
-  //     )
-  //   );
-  //   setFilteredTargetSystems(filteredTargetSystems);
-  //
-  //   // Step 4: Collect Key Business Elements from filtered Target Systems
-  //   const keyBusinessElements = filteredTargetSystems.flatMap(system =>
-  //     system.targetFields
-  //   );
-  //
-  //   // Step 5: Filter Reports based on Key Business Elements in Target Systems
-  //   const filteredReports = reports.filter(report =>
-  //     report.sections.some(section =>
-  //       section.kbes.some(kbe => keyBusinessElements.includes(kbe))
-  //     )
-  //   );
-  //
-  //   setFilteredReports(filteredReports);
-  // };
 
 
   // Handle search input change to filter Target Systems
@@ -370,24 +286,11 @@ const Dashboard = ({ data }) => {
 
     setFilteredReports(relevantReports);
 
-    // Identify associated Target Systems from the filtered Reports
-    // const relevantTargetSystems = targetSystems.filter(system =>
-    //   system.targetFields.some(field =>
-    //     relevantReports.some(report =>
-    //       report.sections.some(section =>
-    //         section.kbes.includes(field)
-    //       )
-    //     )
-    //   )
-    // );
-
-    // console.log(relevantReports);
-
     const relevantKBEs = relevantReports.reduce((kbes, report) =>
       ([...kbes, ...((report?.sections ?? []).reduce((reportKBEs, section) =>
         ([...reportKBEs, section.kbes ?? []]), []))]), []
     )[0];
-    // console.log(relevantKBEs);
+
     const relevantTargetSystems = (targetSystems ??[] ).map(system => {
       // Check if system matches
      const systemMatches = data.find(d =>
@@ -404,7 +307,7 @@ const Dashboard = ({ data }) => {
                   && (relevantKBEs ??[] ).map(kbe => kbe.uri).includes(d.s.value)
               )
           );
-          // console.log(field);
+
           if (fieldsMatches) {
             return field ;
           }
@@ -426,16 +329,9 @@ const Dashboard = ({ data }) => {
 
     setFilteredTargetSystems(relevantTargetSystems);
 
-    // Identify associated Source Systems from the filtered Target Systems
-    // const relevantSourceSystems = sourceSystems.filter(system =>
-    //   system.tables.some(table =>
-    //     table.fields.some(field =>
-    //       relevantTargetSystems.some(targetSystem =>
-    //         targetSystem.targetFields.includes(field)
-    //       )
-    //     )
-    //   )
-    // );
+    const relevantTargetFields = relevantTargetSystems.reduce((fields, system) =>
+      ([...fields, ...(system.targetFields ?? [] )]), []
+    );
 
     const relevantSourceSystems = (sourceSystems ??[] ).map(system => {
       // Check if system matches
@@ -448,22 +344,19 @@ const Dashboard = ({ data }) => {
       const filteredTables = (system.tables ??[] ).map(table => {
           // Check if section name matches
           const tableMatches = data.find(d =>
-              (d.s.value.includes(table.name)
-                  && d.p.value.endsWith('inSourceSystem')
-                  && d.o.value.includes(system)
+              (d.o.value.includes(table.name)
+                  && d.p.value.endsWith('derivedFromTable')
+                  && (relevantTargetFields ??[] ).includes(d.s.value)
               )
           );
-          console.log(table);
-          if (tableMatches) {
-            return table ;
-          }
-          return null;
+          // return null;
+          return table;
         })
         .filter(Boolean); // Remove null fields
       // Include report if:
       // 1. Report name matches, or
       // 2. Any sections remain after filtering
-      if (systemMatches || filteredTables.length > 0) {
+      if (systemMatches) {
         return {
           ...system,
           tables: filteredTables
