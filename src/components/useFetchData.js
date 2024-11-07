@@ -15,17 +15,13 @@ const useFetchData = () => {
           'query=' + encodeURIComponent(`
             SELECT DISTINCT * WHERE {
               { 
-                GRAPH <kg:data:final_merged_output> { 
+                GRAPH <kg_1b:> { 
                   ?s rdf:type ?s_type ; rdfs:label ?s_label ; ?p ?o . 
                   FILTER(?p != rdf:type && ?p != rdfs:label) 
-                } 
-              } UNION { 
-                GRAPH <kg:data:JoinedData> { 
-                  ?s rdf:type ?s_type ; rdfs:label ?s_label ; ?p ?o . 
-                  FILTER(?p != rdf:type && ?p != rdfs:label) 
-                } 
-              } 
-            }
+                }
+              }
+            } 
+
           `),
           {
             auth: {

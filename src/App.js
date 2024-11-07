@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import useFetchData from './components/useFetchData';
 import QueryInput from './components/QueryInput';
 import DataList from './components/DataList';
-import Dashboard from './components/Dashboard';
+import Dashboard from './components/Dashboard1b';
 import DashboardCharts from './components/DashboardCharts';
 
 const App = () => {
@@ -10,7 +10,7 @@ const App = () => {
   const [showResults, setShowResults] = useState(false); // State to control display of results
   const [showQueryBox, setShowQueryBox] = useState(false); // State to control query box visibility
   const [showDashboard, setShowDashboard] = useState(true); // State to control dashboard visibility
-  const [showDashboardCharts, setShowDashboardCharts] = useState(true); // State to control DashboardCharts visibility
+  const [showDashboardCharts, setShowDashboardCharts] = useState(false); // State to control DashboardCharts visibility
   const { data, storedData, setData, error } = useFetchData();
 
   // Function to filter stored data based on query input
