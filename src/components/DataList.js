@@ -9,7 +9,7 @@ const DataList = ({ data }) => {
     <ul>
       {data.map((result, index) => (
         <li key={index}>
-          Subject: {result.s.value}, Predicate: {result.p.value}, Object: {result.o.value}
+          s: {result.s.value}, s_type: {result.s_type.value}, s_label: {result.s_label.value}, p: {result.p.value}, o: {result.o.value}
         </li>
       ))}
     </ul>

@@ -17,6 +17,9 @@ const useFetchData = () => {
               { 
                 GRAPH <kg_1b:> { 
                   ?s rdf:type ?s_type ; rdfs:label ?s_label ; ?p ?o . 
+                  OPTIONAL {
+                  ?o rdfs:label ?o_label . 
+                  }
                   FILTER(?p != rdf:type && ?p != rdfs:label) 
                 }
               }
@@ -38,6 +41,7 @@ const useFetchData = () => {
         if (response.data.results && response.data.results.bindings) {
           setData(response.data.results.bindings);
           setStoredData(response.data.results.bindings); // Store fetched data in memory
+          console.log(response.data.results.bindings);
         } else {
           setData([]); // No data found
           setStoredData([]); // Clear stored data
@@ -49,7 +53,6 @@ const useFetchData = () => {
 
     fetchData();
   }, []);
-
 
   return { data, storedData, setData, error };
 };

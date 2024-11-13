@@ -22,20 +22,20 @@ const Dashboard = ({ data }) => {
     const tgtSystems = new Map();
     const rptSystems = new Map();
 
-    data.forEach((item) => {
-      if (item.s.value.includes("SourceSystem")) {
-        const tables = data
-          .filter((entry) => entry.s.value === item.s.value && entry.p.value.includes("hasTable"))
-          .map((tableEntry) => {
-            const fields = data
-              .filter((fieldEntry) => fieldEntry.s.value === tableEntry.o.value && fieldEntry.p.value.includes("hasField"))
-              .map((fieldItem) => fieldItem.o_label ? fieldItem.o_label.value : fieldItem.o.value);
+      data.forEach((item) => {
+        if (item.s_type.value === 'kg_1b:SourceSystem') {
+          const tables = data
+            .filter((entry) => entry.s.value === item.s.value && entry.p.value === 'kg_1b:hasTable')
+            .map((tableEntry) => {
+              const fields = data
+                .filter((fieldEntry) => fieldEntry.s.value === tableEntry.o.value && fieldEntry.p.value.includes("hasField"))
+                .map((fieldItem) => fieldItem.o_label ? fieldItem.o_label.value : fieldItem.o.value);
 
-            return {
-              name: tableEntry.o_label ? tableEntry.o_label.value : tableEntry.o.value,
-              fields,
-            };
-          });
+              return {
+                name: tableEntry.o_label ? tableEntry.o_label.value : tableEntry.o.value,
+                fields,
+              };
+            });
 
         srcSystems.set(item.s.value, {
           name: item.s_label ? item.s_label.value : item.s.value,
@@ -79,7 +79,6 @@ const Dashboard = ({ data }) => {
     setReports(Array.from(rptSystems.values()));
     setFilteredReports(Array.from(rptSystems.values()));
   }, [data]);
-
   // Search and filter handling
   const handleSearchSourceChange = (e) => {
     const input = e.target.value.toLowerCase();
@@ -107,18 +106,18 @@ const Dashboard = ({ data }) => {
   };
 
   const toggleReportDropdown = (reportName) => {
-      setExpandedReports((prevState) => ({
-        ...prevState,
-        [reportName]: !prevState[reportName]
-      }));
-    };
+    setExpandedReports((prevState) => ({
+      ...prevState,
+      [reportName]: !prevState[reportName]
+    }));
+  };
 
-    const toggleReportSectionDropdown = (sectionName) => {
-      setExpandedReportSections((prevState) => ({
-        ...prevState,
-        [sectionName]: !prevState[sectionName]
-      }));
-    };
+  const toggleReportSectionDropdown = (sectionName) => {
+    setExpandedReportSections((prevState) => ({
+      ...prevState,
+      [sectionName]: !prevState[sectionName]
+    }));
+  };
 
   return (
     <div className="dashboard-container">
@@ -197,7 +196,6 @@ const Dashboard = ({ data }) => {
         {/* Reports Section */}
         <div className="dashboard-card">
           <h3>{filteredReports.length} Reports</h3>
-          {/* Search Box */}
           <input
             type="text"
             value={searchTermReports}
@@ -235,7 +233,6 @@ const Dashboard = ({ data }) => {
             ))}
           </ul>
         </div>
-
       </div>
     </div>
   );
