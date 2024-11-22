@@ -83,7 +83,11 @@ const useFetchData = () => {
 
         if (response.data.results && response.data.results.bindings) {
           const resultBindings = response.data.results.bindings??[];
-          const nodesArr = resultBindings.map(res => ({id: res.system.value, data: {label: res.systemName.value}, position: {x:0, y:0}}));
+          const nodesArr = resultBindings.map((res, idx) => ({
+            id: res.system.value, type: 'system',
+            data: { systemUri: res.system.value, systemName: res.systemName.value },
+            position: { x: 0, y: 0 }
+          }));
           let systemCount = 0, reportCount = 0;
           for (let i = 0; i < nodesArr.length; i++)
             {
