@@ -62,11 +62,12 @@ const useFetchData = () => {
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-          SELECT DISTINCT ?system ?systemName
+          SELECT DISTINCT ?system ?systemName ?systemType
             FROM <kg_1b:>
             WHERE {
-                { ?system a kg_1b:DataSystem . } UNION { ?system a kg_1b:Report . }
+              ?system a ?systemType .
               ?system rdfs:label ?systemName .
+              FILTER(?systemType IN (kg_1b:SourceSystem, kg_1b:DerivedSystem, kg_1b:Report ))
             }
             `),
           {
@@ -84,7 +85,7 @@ const useFetchData = () => {
         if (response.data.results && response.data.results.bindings) {
           const resultBindings = response.data.results.bindings??[];
           const nodesArr = resultBindings.map((res, idx) => ({
-            id: res.system.value, type: 'system',
+            id: res.system.value, type: 'system', systemType: res.systemType.value,
             data: { systemUri: res.system.value, systemName: res.systemName.value },
             position: { x: 0, y: 0 }
           }));
@@ -149,7 +150,7 @@ const useFetchData = () => {
 
         if (response.data.results && response.data.results.bindings) {
           const resultBindings = response.data.results.bindings??[];
-          const edgesArr = resultBindings.map(res => ({id: res.edge.value, source: res.origin.value, target: res.destination.value}));
+          const edgesArr = resultBindings.map(res => ({id: res.edge.value + res.origin.value + res.destination.value, source: res.origin.value, target: res.destination.value}));
           setEdgeData(edgesArr);
           console.log(edgesArr);
         } else {
