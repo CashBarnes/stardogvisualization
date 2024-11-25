@@ -13,8 +13,8 @@ const defaultEdgeOptions = {
   style: { stroke: '#4f46e5' }
 };
 
-function Dashboard() {
-    const { nodeData, setNodeData, edgeData, setEdgeData } = useFetchData();
+function Dashboard({ searchTerm }) {
+    const { nodeData, setNodeData, edgeData} = useFetchData(searchTerm);
     const onNodesChange = useCallback(
       (changes) => setNodeData((nds) => applyNodeChanges(changes, nds)),
       [setNodeData]
