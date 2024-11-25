@@ -1,6 +1,17 @@
 import ReactFlow, {applyNodeChanges, MiniMap, Controls} from 'react-flow-renderer';
 import React, {useState, useCallback} from "react";
 import useFetchData from "./useFetchData";
+import SystemNode from "./SystemNode";
+
+// Define nodeTypes outside component
+const nodeTypes = {
+  system: SystemNode
+};
+
+const defaultEdgeOptions = {
+  animated: true,
+  style: { stroke: '#4f46e5' }
+};
 
 function Dashboard() {
     const { nodeData, setNodeData, edgeData, setEdgeData } = useFetchData();
@@ -14,30 +25,13 @@ function Dashboard() {
     //     {id: 'e2-3', source: '2', target: '3'},
     // ];
 
-    let systemCount = 0, reportCount = 0;
-
-    for (let i = 0; i < nodeData.length; i++)
-    {
-      if (nodeData[i].id.toLowerCase().endsWith('report'))
-      {
-        nodeData[i].position.x = 300;
-        nodeData[i].position.y = reportCount * 100;
-        reportCount++;
-      }
-      else
-      {
-        nodeData[i].position.y = systemCount * 100;
-        systemCount++;
-      }
-    }
-    
     const onNodesChange = useCallback(
       (changes) => setNodeData((nds) => applyNodeChanges(changes, nds)),
       [setNodeData]
     );
   return (
-        <div className='relation-section' style={{ width:800, height:400 }}>
-        <ReactFlow nodes={nodeData} edges={edgeData} onNodesChange={onNodesChange}>
+        <div className='relation-section' style={{ width: '100%', height: '600px', border: '1px solid #e5e7eb' }}>
+        <ReactFlow nodes={nodeData} edges={edgeData} nodeTypes={nodeTypes} defaultEdgeOptions={defaultEdgeOptions} onNodesChange={onNodesChange}>
         <MiniMap />
         <Controls />
         </ReactFlow>
