@@ -68,12 +68,20 @@ const styles = {
     backgroundColor: '#4f46e5',
     border: 'none',
   },
+  redHandle: {
+    width: '8px',
+    height: '8px',
+    backgroundColor: '#e00546',
+    border: 'none',
+  }
 };
 
 const SystemNode = memo(function SystemNode({ data }) {
   const [systemDetails, setSystemDetails] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
+
+  const reportTitle = "report";
 
   useEffect(() => {
     fetchData();
@@ -113,7 +121,7 @@ const SystemNode = memo(function SystemNode({ data }) {
       <Handle
         type="target"
         position={Position.Left}
-        style={styles.handle}
+        style={data.systemName.toLowerCase().endsWith(reportTitle) ? styles.handle : styles.redHandle}
       />
 
       <div style={styles.header}>
@@ -159,24 +167,36 @@ const SystemNode = memo(function SystemNode({ data }) {
         </div>
       )}
 
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="a"
-        style={{
-          ...styles.handle,
-          top: '30%',
-        }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="b"
-        style={{
-          ...styles.handle,
-          top: '70%',
-        }}
-      />
+    {
+      !data.systemName.toLowerCase().endsWith(reportTitle)
+      &&
+    (
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="a"
+      style={{
+        ...styles.handle,
+        top: '30%',
+      }}
+    />      
+    )
+    }
+    {
+      !data.systemName.toLowerCase().endsWith(reportTitle)
+      &&
+    (
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="b"
+      style={{
+        ...styles.redHandle,
+        top: '70%',
+      }}
+    />
+    )
+    }
     </div>
   );
 });

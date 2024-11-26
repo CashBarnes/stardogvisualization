@@ -13,6 +13,7 @@ const useFetchData = (searchTerm) => {
   let nodesArr = [];
   let edgesArr = [];
   const reportTitle = "report";
+  const redHandleColor = "#e00546";
 
   const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
 
@@ -260,8 +261,23 @@ const useFetchData = (searchTerm) => {
         countByIndex.set(nodesArr[i].derivationIndex, countByIndex.get(nodesArr[i].derivationIndex) + 1); // Increment by 1. Probably a cleaner way to do this!
       }
 
+      // Choose which source handle an edge should use based on whether it feeds into a report or a system
+      for (let i = 0; i < edgesArr.length; i++)
+      {
+        if (edgesArr[i].target.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+        {
+          edgesArr[i].sourceHandle = "a";
+        }
+        else
+        {
+          edgesArr[i].sourceHandle = "b";
+          edgesArr[i].style = { stroke: redHandleColor };
+        }
+      }
+
       console.log(nodesArr);
       setNodeData(nodesArr);
+      setEdgeData(edgesArr);
     };
 
     fetchData();
