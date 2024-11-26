@@ -62,7 +62,8 @@ const useFetchData = (searchTerm) => {
           const resultBindings = response.data.results.bindings??[];
           nodesArr = resultBindings.map((res, idx) => ({
             id: res.system.value, type: 'system',
-            data: { systemUri: res.system.value, systemName: res.systemName.value },
+            systemType: res.systemType.value,
+            data: { systemUri: res.system.value, systemName: res.systemName.value, systemType: res.systemType.value },
             position: { x: 0, y: 0 },
             derivationIndex: 0
           }));

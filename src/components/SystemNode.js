@@ -81,7 +81,8 @@ const SystemNode = memo(function SystemNode({ data }) {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
 
-  const reportTitle = "report";
+  const sourceSystemType = "sourcesystem";
+  const reportType = "report";
 
   useEffect(() => {
     fetchData();
@@ -118,11 +119,18 @@ const SystemNode = memo(function SystemNode({ data }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={data.systemName.toLowerCase().endsWith(reportTitle) ? styles.handle : styles.redHandle}
-      />
+
+      {
+        !data.systemType.toLowerCase().endsWith(sourceSystemType)
+        &&
+        (
+          <Handle
+            type="target"
+            position={Position.Left}
+            style={data.systemType.toLowerCase().endsWith(reportType) ? styles.handle : styles.redHandle}
+          />
+        )
+      }
 
       <div style={styles.header}>
         {data.systemName}
@@ -168,7 +176,7 @@ const SystemNode = memo(function SystemNode({ data }) {
       )}
 
     {
-      !data.systemName.toLowerCase().endsWith(reportTitle)
+      !data.systemType.toLowerCase().endsWith(reportType)
       &&
     (
     <Handle
@@ -183,7 +191,7 @@ const SystemNode = memo(function SystemNode({ data }) {
     )
     }
     {
-      !data.systemName.toLowerCase().endsWith(reportTitle)
+      !data.systemType.toLowerCase().endsWith(reportType)
       &&
     (
     <Handle
