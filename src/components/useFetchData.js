@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { STARDOG_URL, STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
 
-const useFetchData = () => {
-  const [data, setData] = useState([]);
-  const [storedData, setStoredData] = useState([]); // Stored data in memory
+const useFetchData = (searchTerm) => {
   const [nodeData, setNodeData] = useState([]);
   const [edgeData, setEdgeData] = useState([]);
   const [error, setError] = useState(null);
@@ -16,19 +14,37 @@ const useFetchData = () => {
   let edgesArr = [];
   const reportTitle = "report";
 
+  const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
+
     useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-          SELECT DISTINCT ?system ?systemName
+          SELECT DISTINCT 
+            ?system ?systemName ?systemType
             FROM <kg_1b:>
             WHERE {
-                { ?system a kg_1b:DataSystem . } UNION { ?system a kg_1b:Report . }
-              ?system rdfs:label ?systemName .
+                ?system a ?systemType .
+                ?system rdfs:label ?systemName .
+                FILTER(
+                    (?systemType=kg_1b:Report && REGEX(LCASE(?systemName), '${strProtector(searchTerm)}')) ||
+                    (
+                        (?systemType IN (kg_1b:DerivedSystem, kg_1b:SourceSystem)) 
+                        && (
+                            EXISTS { 
+                                ?report a kg_1b:Report ; rdfs:label ?reportName .
+                                { ?report kg_1b:computedFrom ?system . } UNION { 
+                                    ?report kg_1b:computedFrom ?system1 . ?system1 kg_1b:derivedFrom+ ?system .
+                                }
+                                FILTER(REGEX(LCASE(?reportName), '${strProtector(searchTerm)}'))
+                            }
+                        )
+                    )
+                )
             }
-            `),
+          `),
           {
             auth: {
               username: STARDOG_USERNAME,
@@ -49,7 +65,6 @@ const useFetchData = () => {
             position: { x: 0, y: 0 },
             derivationIndex: 0
           }));
-          
           setNodeData(nodesArr);
           console.log(nodesArr);
         } else {
@@ -58,9 +73,10 @@ const useFetchData = () => {
         }
       } catch (err) {
         setError(err.message); // Handle connection errors
-      }    
+      }
 
       try {
+        const nodeUrisStr = nodesArr.map(n => (n.id ?? '')).join(', ') ?? '';
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
@@ -75,6 +91,7 @@ const useFetchData = () => {
                   ?destination a kg_1b:Report .
               }
               FILTER(?edge IN (kg_1b:derivedFrom, kg_1b:computedFrom))
+              FILTER(?origin IN (${nodeUrisStr}) && ?destination IN (${nodeUrisStr}))
           }
           `),
           {
@@ -91,7 +108,7 @@ const useFetchData = () => {
 
         if (response.data.results && response.data.results.bindings) {
           const resultBindings = response.data.results.bindings??[];
-          edgesArr = resultBindings.map(res => ({id: res.edge.value, source: res.origin.value, target: res.destination.value}));
+          edgesArr = resultBindings.map(res => ({id: res.edge.value + res.origin.value + res.destination.value, source: res.origin.value, target: res.destination.value}));
           setEdgeData(edgesArr);
           console.log(edgesArr);
         } else {
@@ -116,7 +133,6 @@ const useFetchData = () => {
 
         derivedSystems.push(edgesArr[i].target);
       }
-      
       // Assign an index for levels of derivation
       // Start with source systems
       for (let i = 0; i < nodesArr.length; i++)
@@ -129,7 +145,7 @@ const useFetchData = () => {
 
         if (derivedSystems.includes(nodesArr[i].id))
         {
-          continue;          
+          continue;
         }
 
         indexedSystems.push(nodesArr[i].id);
@@ -170,7 +186,7 @@ const useFetchData = () => {
           }
 
           currentNodeIndex = -1;
-          currentDerivationIndex = -1;          
+          currentDerivationIndex = -1;
 
           for (let j = 0; j < nodesArr.length; j++) // TODO: Can be optimized with a quicker way to look up nodes by ID
           {
@@ -222,7 +238,7 @@ const useFetchData = () => {
           {
             nodesArr[j].derivationIndex = highestIndex + 1;
             break;
-          }          
+          }
         }
       }
 
@@ -246,10 +262,12 @@ const useFetchData = () => {
 
       console.log(nodesArr);
       setNodeData(nodesArr);
-    };    
+    };
 
     fetchData();
-  }, []);
+  }, [searchTerm]);
+
+
 
   
 

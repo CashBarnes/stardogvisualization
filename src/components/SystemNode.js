@@ -4,7 +4,7 @@ import { fetchSystemDetails } from '../util/fetchSystemDetails';
 
 const styles = {
   node: {
-    background: 'white',
+    backgroundColor: 'white',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
@@ -33,7 +33,7 @@ const styles = {
     padding: '4px 8px',
     borderRadius: '4px',
     border: 'none',
-    background: 'transparent',
+    backgroundColor: 'transparent',
     cursor: 'pointer',
     fontSize: '14px',
     color: '#374151',
@@ -65,7 +65,7 @@ const styles = {
   handle: {
     width: '8px',
     height: '8px',
-    background: '#4f46e5',
+    backgroundColor: '#4f46e5',
     border: 'none',
   },
 };
