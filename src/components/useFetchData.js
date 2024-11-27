@@ -27,27 +27,33 @@ const useFetchData = (searchTerm) => {
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-          SELECT DISTINCT 
-            ?system ?systemName ?systemType
+            SELECT DISTINCT ?system ?systemName ?systemType
             FROM <kg_1b:>
             WHERE {
-                ?system a ?systemType .
-                ?system rdfs:label ?systemName .
-                FILTER(
-                    (?systemType=kg_1b:Report && REGEX(LCASE(?systemName), '${strProtector(searchTerm)}')) ||
-                    (
-                        (?systemType IN (kg_1b:DerivedSystem, kg_1b:SourceSystem)) 
-                        && (
-                            EXISTS { 
-                                ?report a kg_1b:Report ; rdfs:label ?reportName .
-                                { ?report kg_1b:computedFrom ?system . } UNION { 
-                                    ?report kg_1b:computedFrom ?system1 . ?system1 kg_1b:derivedFrom+ ?system .
-                                }
-                                FILTER(REGEX(LCASE(?reportName), '${strProtector(searchTerm)}'))
-                            }
-                        )
-                    )
-                )
+                ?system0 (kg_1b:hasSection|kg_1b:hasTable) ?group0 ; rdfs:label ?system0Name .
+                ?group0 (kg_1b:hasBusinessElement|kg_1b:hasField) ?item0 ; rdfs:label ?group0Name .
+                ?item0 rdfs:label ?item0Name .
+                { 
+                    ?system0 
+                    a ?systemType ; 
+                            rdfs:label ?systemName .
+                    BIND(?system0 AS ?system)
+                }
+                UNION 
+                {
+                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group ; 
+                        (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system0 .
+                    ?system a ?systemType ; rdfs:label ?systemName .
+                } 
+                UNION 
+                {
+                    ?system0 (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system .
+                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group .
+                    ?system a ?systemType ; rdfs:label ?systemName .
+                }
+                FILTER(?systemType!=kg_1b:DataSystem)
+                FILTER(REGEX(LCASE(?system0Name), ?searchTerm) || REGEX(LCASE(?group0Name), ?searchTerm) || REGEX(LCASE(?item0Name), ?searchTerm))
+                BIND('${strProtector(searchTerm)}' AS ?searchTerm)
             }
           `),
           {
@@ -67,7 +73,12 @@ const useFetchData = (searchTerm) => {
           nodesArr = resultBindings.map((res, idx) => ({
             id: res.system.value, type: 'system',
             systemType: res.systemType.value,
-            data: { systemUri: res.system.value, systemName: res.systemName.value, systemType: res.systemType.value },
+            data: {
+              searchTerm: searchTerm ?? '',
+              systemUri: res.system.value,
+              systemName: res.systemName.value,
+              systemType: res.systemType.value
+            },
             position: { x: 0, y: 0 },
             derivationIndex: 0
           }));

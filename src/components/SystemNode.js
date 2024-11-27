@@ -82,6 +82,7 @@ const SystemNode = memo(function SystemNode({ data }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const sourceSystemType = "sourcesystem";
+  const derivedSystemType = "derivedsystem"
   const reportType = "report";
 
   useEffect(() => {
@@ -121,6 +122,7 @@ const SystemNode = memo(function SystemNode({ data }) {
     >
 
       {
+        // (data.systemType.toLowerCase().endsWith(derivedSystemType) && !data.systemType.toLowerCase().endsWith(reportType))
         !data.systemType.toLowerCase().endsWith(sourceSystemType)
         &&
         (
