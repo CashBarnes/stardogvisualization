@@ -12,7 +12,12 @@ const useFetchData = (searchTerm) => {
 
   let nodesArr = [];
   let edgesArr = [];
-  const reportTitle = "report";
+  const reportType = "report";
+  const sourceSystemType = "sourcesystem";
+  const redHandleColor = "#e00546";
+
+  const isReport = (node) => { return node.systemType.toLowerCase().endsWith(reportType); };
+  const isSourceSystem = (node) => { return node.systemType.toLowerCase().endsWith(sourceSystemType); };
 
   const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
 
@@ -22,27 +27,33 @@ const useFetchData = (searchTerm) => {
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-          SELECT DISTINCT 
-            ?system ?systemName ?systemType
+            SELECT DISTINCT ?system ?systemName ?systemType
             FROM <kg_1b:>
             WHERE {
-                ?system a ?systemType .
-                ?system rdfs:label ?systemName .
-                FILTER(
-                    (?systemType=kg_1b:Report && REGEX(LCASE(?systemName), '${strProtector(searchTerm)}')) ||
-                    (
-                        (?systemType IN (kg_1b:DerivedSystem, kg_1b:SourceSystem)) 
-                        && (
-                            EXISTS { 
-                                ?report a kg_1b:Report ; rdfs:label ?reportName .
-                                { ?report kg_1b:computedFrom ?system . } UNION { 
-                                    ?report kg_1b:computedFrom ?system1 . ?system1 kg_1b:derivedFrom+ ?system .
-                                }
-                                FILTER(REGEX(LCASE(?reportName), '${strProtector(searchTerm)}'))
-                            }
-                        )
-                    )
-                )
+                ?system0 (kg_1b:hasSection|kg_1b:hasTable) ?group0 ; rdfs:label ?system0Name .
+                ?group0 (kg_1b:hasBusinessElement|kg_1b:hasField) ?item0 ; rdfs:label ?group0Name .
+                ?item0 rdfs:label ?item0Name .
+                { 
+                    ?system0 
+                    a ?systemType ; 
+                            rdfs:label ?systemName .
+                    BIND(?system0 AS ?system)
+                }
+                UNION 
+                {
+                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group ; 
+                        (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system0 .
+                    ?system a ?systemType ; rdfs:label ?systemName .
+                } 
+                UNION 
+                {
+                    ?system0 (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system .
+                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group .
+                    ?system a ?systemType ; rdfs:label ?systemName .
+                }
+                FILTER(?systemType!=kg_1b:DataSystem)
+                FILTER(REGEX(LCASE(?system0Name), ?searchTerm) || REGEX(LCASE(?group0Name), ?searchTerm) || REGEX(LCASE(?item0Name), ?searchTerm))
+                BIND('${strProtector(searchTerm)}' AS ?searchTerm)
             }
           `),
           {
@@ -61,11 +72,16 @@ const useFetchData = (searchTerm) => {
           const resultBindings = response.data.results.bindings??[];
           nodesArr = resultBindings.map((res, idx) => ({
             id: res.system.value, type: 'system',
-            data: { systemUri: res.system.value, systemName: res.systemName.value },
+            systemType: res.systemType.value,
+            data: {
+              searchTerm: searchTerm ?? '',
+              systemUri: res.system.value,
+              systemName: res.systemName.value,
+              systemType: res.systemType.value
+            },
             position: { x: 0, y: 0 },
             derivationIndex: 0
           }));
-
           setNodeData(nodesArr);
           console.log(nodesArr);
         } else {
@@ -120,32 +136,51 @@ const useFetchData = (searchTerm) => {
         setError(err.message); // Handle connection errors
       }
 
-      // Iterate through edge data, take note of systems which are derived
+      // Iterate through edge data
       let indexedSystems = [];
-      let derivedSystems = [];
       let numberOfSystems = nodesArr.length;
-      for (let i = 0; i < edgesArr.length; i++)
+      const systemsById = new Map(); // Used to quickly look up data on nodes during loops
+
+      for (let i = 0; i < nodesArr.length; i++)
       {
-        if (derivedSystems.includes(edgesArr[i].target)
-            || edgesArr[i].target.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+        if (nodesArr[i].id === null || nodesArr[i].id === undefined)
         {
-          continue;
+          continue; // Should not be possible, but prevents errors for bad data.
         }
 
-        derivedSystems.push(edgesArr[i].target);
+        systemsById.set(nodesArr[i].id, nodesArr[i]);
       }
 
+      const isReportById = (id) => {
+        if(!systemsById.has(id))
+        {
+          return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+        }
+
+        return isReport(systemsById.get(id));
+      };
+
+      // Currently unused, but kept here for convenience in case it is needed later
+      // const isSourceSystemById = (id) => {
+      //   if(!systemsById.has(id))
+      //     {
+      //       return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+      //     }
+  
+      //     return isSourceSystem(systemsById.get(id));
+      // };
+      
       // Assign an index for levels of derivation
       // Start with source systems
       for (let i = 0; i < nodesArr.length; i++)
       {
-        if (nodesArr[i].id.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+        if (isReport(nodesArr[i]))
         {
           numberOfSystems--; // Reports will be checked last, so don't include them in the total count
           continue;
         }
 
-        if (derivedSystems.includes(nodesArr[i].id))
+        if (!isSourceSystem(nodesArr[i]))
         {
           continue;
         }
@@ -158,7 +193,7 @@ const useFetchData = (searchTerm) => {
       let highestIndex = 0;
       const maxAttempts = 100;
       let currentAttempts = 0;
-      let skipList;
+      let skipList, sourceNode, targetNode;
 
       // Assign indices until every system has been assigned
       // This loop is potentially infinite, so including an upper limit to ensure we break it. (This is fragile.)
@@ -171,14 +206,11 @@ const useFetchData = (searchTerm) => {
         {
           if (indexedSystems.includes(edgesArr[i].target)
             || !indexedSystems.includes(edgesArr[i].source)
-            || edgesArr[i].target.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+            || isReportById(edgesArr[i].target))
           {
             skipList.push(edgesArr[i].target);
           }
-        }
-
-        console.log("Skip List:");
-        console.log(skipList);
+        }        
 
         for (let i = 0; i < edgesArr.length; i++)
         {
@@ -190,57 +222,42 @@ const useFetchData = (searchTerm) => {
           currentNodeIndex = -1;
           currentDerivationIndex = -1;
 
-          for (let j = 0; j < nodesArr.length; j++) // TODO: Can be optimized with a quicker way to look up nodes by ID
+          sourceNode = systemsById.get(edgesArr[i].source);
+          targetNode = systemsById.get(edgesArr[i].target);
+
+          if (sourceNode != null && targetNode != null)
           {
-            if (nodesArr[j].id == edgesArr[i].source)
+            currentDerivationIndex = sourceNode.derivationIndex + 1;
+            if (highestIndex < currentDerivationIndex)
             {
-              currentDerivationIndex = nodesArr[j].derivationIndex + 1;
-              if (highestIndex < currentDerivationIndex)
-              {
-                highestIndex = currentDerivationIndex;
-              }
+              highestIndex = currentDerivationIndex;
             }
 
-            if (nodesArr[j].id == edgesArr[i].target)
+            targetNode.derivationIndex = Math.max(currentDerivationIndex, targetNode.derivationIndex);
+            if (!indexedSystems.includes(targetNode.id))
             {
-              currentNodeIndex = j;
-            }
-
-            // Minor optimization, exit the loop when both values have been found.
-            if (-1 < currentDerivationIndex
-                && -1 < currentNodeIndex)
-            {
-              nodesArr[currentNodeIndex].derivationIndex = Math.max(currentDerivationIndex, nodesArr[currentNodeIndex].derivationIndex);
-              if (!indexedSystems.includes(nodesArr[currentNodeIndex].id))
-              {
-                indexedSystems.push(nodesArr[currentNodeIndex].id);
-              }
-              break;
+              indexedSystems.push(targetNode.id);
             }
           }
-          // This loop will continue until all systems have a derivation index.
-        }
-
-        console.log("Indexed Systems:");
-        console.log(indexedSystems);
+        } // This while loop will continue until all systems have a derivation index.
       }
+
+      let nextReport;
 
       // Assign an index to reports last.
       // Similar to the above logic, but only looking for reports.
       for (let i = 0; i < edgesArr.length; i++)
       {
-        if (!edgesArr[i].target.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+        if (!isReportById(edgesArr[i].target))
         {
           continue;
         }
 
-        for (let j = 0; j < nodesArr.length; j++) // TODO: Can be optimized with a quicker way to look up nodes by ID
+        nextReport = systemsById.get(edgesArr[i].target);
+
+        if (nextReport !== null)
         {
-          if (nodesArr[j].id == edgesArr[i].target)
-          {
-            nodesArr[j].derivationIndex = highestIndex + 1;
-            break;
-          }
+          nextReport.derivationIndex = highestIndex + 1;
         }
       }
 
@@ -249,7 +266,6 @@ const useFetchData = (searchTerm) => {
 
       let countByIndex = new Map();
 
-      let systemCount = 0, reportCount = 0;
       for (let i = 0; i < nodesArr.length; i++)
       {
         if (!countByIndex.has(nodesArr[i].derivationIndex))
@@ -262,14 +278,27 @@ const useFetchData = (searchTerm) => {
         countByIndex.set(nodesArr[i].derivationIndex, countByIndex.get(nodesArr[i].derivationIndex) + 1); // Increment by 1. Probably a cleaner way to do this!
       }
 
+      // Choose which source handle an edge should use based on whether it feeds into a report or a system
+      for (let i = 0; i < edgesArr.length; i++)
+      {
+        if (isReportById(edgesArr[i].target))
+        {
+          edgesArr[i].sourceHandle = "a";
+        }
+        else
+        {
+          edgesArr[i].sourceHandle = "b";
+          edgesArr[i].style = { stroke: redHandleColor };
+        }
+      }
+
       console.log(nodesArr);
       setNodeData(nodesArr);
+      setEdgeData(edgesArr);
     };
 
     fetchData();
   }, [searchTerm]);
-
-
 
   return { nodeData, setNodeData, edgeData, setEdgeData, error };
 };

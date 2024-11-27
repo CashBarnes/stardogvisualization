@@ -68,12 +68,22 @@ const styles = {
     backgroundColor: '#4f46e5',
     border: 'none',
   },
+  redHandle: {
+    width: '8px',
+    height: '8px',
+    backgroundColor: '#e00546',
+    border: 'none',
+  }
 };
 
 const SystemNode = memo(function SystemNode({ data }) {
   const [systemDetails, setSystemDetails] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
+
+  const sourceSystemType = "sourcesystem";
+  const derivedSystemType = "derivedsystem"
+  const reportType = "report";
 
   useEffect(() => {
     fetchData();
@@ -110,11 +120,19 @@ const SystemNode = memo(function SystemNode({ data }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={styles.handle}
-      />
+
+      {
+        // (data.systemType.toLowerCase().endsWith(derivedSystemType) && !data.systemType.toLowerCase().endsWith(reportType))
+        !data.systemType.toLowerCase().endsWith(sourceSystemType)
+        &&
+        (
+          <Handle
+            type="target"
+            position={Position.Left}
+            style={data.systemType.toLowerCase().endsWith(reportType) ? styles.handle : styles.redHandle}
+          />
+        )
+      }
 
       <div style={styles.header}>
         {data.systemName}
@@ -159,24 +177,36 @@ const SystemNode = memo(function SystemNode({ data }) {
         </div>
       )}
 
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="a"
-        style={{
-          ...styles.handle,
-          top: '30%',
-        }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="b"
-        style={{
-          ...styles.handle,
-          top: '70%',
-        }}
-      />
+    {
+      !data.systemType.toLowerCase().endsWith(reportType)
+      &&
+    (
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="a"
+      style={{
+        ...styles.handle,
+        top: '30%',
+      }}
+    />      
+    )
+    }
+    {
+      !data.systemType.toLowerCase().endsWith(reportType)
+      &&
+    (
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="b"
+      style={{
+        ...styles.redHandle,
+        top: '70%',
+      }}
+    />
+    )
+    }
     </div>
   );
 });
