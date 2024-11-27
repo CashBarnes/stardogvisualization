@@ -149,14 +149,15 @@ const useFetchData = (searchTerm) => {
         return isReport(systemsById.get(id));
       };
 
-      const isSourceSystemById = (id) => {
-        if(!systemsById.has(id))
-          {
-            return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
-          }
+      // Currently unused, but kept here for convenience in case it is needed later
+      // const isSourceSystemById = (id) => {
+      //   if(!systemsById.has(id))
+      //     {
+      //       return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+      //     }
   
-          return isSourceSystem(systemsById.get(id));
-      };
+      //     return isSourceSystem(systemsById.get(id));
+      // };
       
       // Assign an index for levels of derivation
       // Start with source systems
@@ -262,7 +263,6 @@ const useFetchData = (searchTerm) => {
 
       let countByIndex = new Map();
 
-      let systemCount = 0, reportCount = 0;
       for (let i = 0; i < nodesArr.length; i++)
       {
         if (!countByIndex.has(nodesArr[i].derivationIndex))
