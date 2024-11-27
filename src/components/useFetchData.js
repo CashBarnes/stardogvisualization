@@ -12,8 +12,12 @@ const useFetchData = (searchTerm) => {
 
   let nodesArr = [];
   let edgesArr = [];
-  const reportTitle = "report";
+  const reportType = "report";
+  const sourceSystemType = "sourcesystem";
   const redHandleColor = "#e00546";
+
+  const isReport = (node) => { return node.systemType.toLowerCase().endsWith(reportType); };
+  const isSourceSystem = (node) => { return node.systemType.toLowerCase().endsWith(sourceSystemType); };
 
   const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
 
@@ -121,31 +125,50 @@ const useFetchData = (searchTerm) => {
         setError(err.message); // Handle connection errors
       }
 
-      // Iterate through edge data, take note of systems which are derived
+      // Iterate through edge data
       let indexedSystems = [];
-      let derivedSystems = [];
       let numberOfSystems = nodesArr.length;
-      for (let i = 0; i < edgesArr.length; i++)
+      const systemsById = new Map(); // Used to quickly look up data on nodes during loops
+
+      for (let i = 0; i < nodesArr.length; i++)
       {
-        if (derivedSystems.includes(edgesArr[i].target)
-            || edgesArr[i].target.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+        if (nodesArr[i].id === null || nodesArr[i].id === undefined)
         {
-          continue;
+          continue; // Should not be possible, but prevents errors for bad data.
         }
 
-        derivedSystems.push(edgesArr[i].target);
+        systemsById.set(nodesArr[i].id, nodesArr[i]);
       }
+
+      const isReportById = (id) => {
+        if(!systemsById.has(id))
+        {
+          return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+        }
+
+        return isReport(systemsById.get(id));
+      };
+
+      const isSourceSystemById = (id) => {
+        if(!systemsById.has(id))
+          {
+            return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+          }
+  
+          return isSourceSystem(systemsById.get(id));
+      };
+      
       // Assign an index for levels of derivation
       // Start with source systems
       for (let i = 0; i < nodesArr.length; i++)
       {
-        if (nodesArr[i].id.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+        if (isReport(nodesArr[i]))
         {
           numberOfSystems--; // Reports will be checked last, so don't include them in the total count
           continue;
         }
 
-        if (derivedSystems.includes(nodesArr[i].id))
+        if (!isSourceSystem(nodesArr[i]))
         {
           continue;
         }
@@ -171,7 +194,7 @@ const useFetchData = (searchTerm) => {
         {
           if (indexedSystems.includes(edgesArr[i].target)
             || !indexedSystems.includes(edgesArr[i].source)
-            || edgesArr[i].target.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+            || isReportById(edgesArr[i].target))
           {
             skipList.push(edgesArr[i].target);
           }
@@ -179,6 +202,8 @@ const useFetchData = (searchTerm) => {
 
         console.log("Skip List:");
         console.log(skipList);
+
+        let sourceNode, targetNode;
 
         for (let i = 0; i < edgesArr.length; i++)
         {
@@ -190,57 +215,45 @@ const useFetchData = (searchTerm) => {
           currentNodeIndex = -1;
           currentDerivationIndex = -1;
 
-          for (let j = 0; j < nodesArr.length; j++) // TODO: Can be optimized with a quicker way to look up nodes by ID
+          sourceNode = systemsById.get(edgesArr[i].source);
+          targetNode = systemsById.get(edgesArr[i].target);
+
+          if (sourceNode != null && targetNode != null)
           {
-            if (nodesArr[j].id == edgesArr[i].source)
+            currentDerivationIndex = sourceNode.derivationIndex + 1;
+            if (highestIndex < currentDerivationIndex)
             {
-              currentDerivationIndex = nodesArr[j].derivationIndex + 1;
-              if (highestIndex < currentDerivationIndex)
-              {
-                highestIndex = currentDerivationIndex;
-              }
+              highestIndex = currentDerivationIndex;
             }
 
-            if (nodesArr[j].id == edgesArr[i].target)
+            targetNode.derivationIndex = Math.max(currentDerivationIndex, targetNode.derivationIndex);
+            if (!indexedSystems.includes(targetNode.id))
             {
-              currentNodeIndex = j;
-            }
-
-            // Minor optimization, exit the loop when both values have been found.
-            if (-1 < currentDerivationIndex
-                && -1 < currentNodeIndex)
-            {
-              nodesArr[currentNodeIndex].derivationIndex = Math.max(currentDerivationIndex, nodesArr[currentNodeIndex].derivationIndex);
-              if (!indexedSystems.includes(nodesArr[currentNodeIndex].id))
-              {
-                indexedSystems.push(nodesArr[currentNodeIndex].id);
-              }
-              break;
+              indexedSystems.push(targetNode.id);
             }
           }
-          // This loop will continue until all systems have a derivation index.
-        }
+        } // This while loop will continue until all systems have a derivation index.
 
         console.log("Indexed Systems:");
         console.log(indexedSystems);
       }
 
+      let nextReport;
+
       // Assign an index to reports last.
       // Similar to the above logic, but only looking for reports.
       for (let i = 0; i < edgesArr.length; i++)
       {
-        if (!edgesArr[i].target.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+        if (!isReportById(edgesArr[i].target))
         {
           continue;
         }
 
-        for (let j = 0; j < nodesArr.length; j++) // TODO: Can be optimized with a quicker way to look up nodes by ID
+        nextReport = systemsById.get(edgesArr[i].target);
+
+        if (nextReport !== null)
         {
-          if (nodesArr[j].id == edgesArr[i].target)
-          {
-            nodesArr[j].derivationIndex = highestIndex + 1;
-            break;
-          }
+          nextReport.derivationIndex = highestIndex + 1;
         }
       }
 
@@ -265,7 +278,7 @@ const useFetchData = (searchTerm) => {
       // Choose which source handle an edge should use based on whether it feeds into a report or a system
       for (let i = 0; i < edgesArr.length; i++)
       {
-        if (edgesArr[i].target.toLowerCase().endsWith(reportTitle)) // TODO: Update with a more concrete method of identifying reports
+        if (isReportById(edgesArr[i].target))
         {
           edgesArr[i].sourceHandle = "a";
         }
