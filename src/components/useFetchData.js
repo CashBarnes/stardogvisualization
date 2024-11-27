@@ -289,10 +289,6 @@ const useFetchData = (searchTerm) => {
     fetchData();
   }, [searchTerm]);
 
-
-
-  
-
   return { nodeData, setNodeData, edgeData, setEdgeData, error };
 };
 
