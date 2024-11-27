@@ -182,7 +182,7 @@ const useFetchData = (searchTerm) => {
       let highestIndex = 0;
       const maxAttempts = 100;
       let currentAttempts = 0;
-      let skipList;
+      let skipList, sourceNode, targetNode;
 
       // Assign indices until every system has been assigned
       // This loop is potentially infinite, so including an upper limit to ensure we break it. (This is fragile.)
@@ -199,12 +199,7 @@ const useFetchData = (searchTerm) => {
           {
             skipList.push(edgesArr[i].target);
           }
-        }
-
-        console.log("Skip List:");
-        console.log(skipList);
-
-        let sourceNode, targetNode;
+        }        
 
         for (let i = 0; i < edgesArr.length; i++)
         {
@@ -234,9 +229,6 @@ const useFetchData = (searchTerm) => {
             }
           }
         } // This while loop will continue until all systems have a derivation index.
-
-        console.log("Indexed Systems:");
-        console.log(indexedSystems);
       }
 
       let nextReport;
