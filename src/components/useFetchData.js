@@ -1,3 +1,4 @@
+// src/components/useFetchData.js
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { STARDOG_URL, STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
@@ -21,39 +22,33 @@ const useFetchData = (searchTerm) => {
 
   const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-            SELECT DISTINCT ?system ?systemName ?systemType
+          SELECT DISTINCT
+            ?system ?systemName ?systemType
             FROM <kg_1b:>
             WHERE {
-                ?system0 (kg_1b:hasSection|kg_1b:hasTable) ?group0 ; rdfs:label ?system0Name .
-                ?group0 (kg_1b:hasBusinessElement|kg_1b:hasField) ?item0 ; rdfs:label ?group0Name .
-                ?item0 rdfs:label ?item0Name .
-                { 
-                    ?system0 
-                    a ?systemType ; 
-                            rdfs:label ?systemName .
-                    BIND(?system0 AS ?system)
-                }
-                UNION 
-                {
-                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group ; 
-                        (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system0 .
-                    ?system a ?systemType ; rdfs:label ?systemName .
-                } 
-                UNION 
-                {
-                    ?system0 (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system .
-                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group .
-                    ?system a ?systemType ; rdfs:label ?systemName .
-                }
-                FILTER(?systemType!=kg_1b:DataSystem)
-                FILTER(REGEX(LCASE(?system0Name), ?searchTerm) || REGEX(LCASE(?group0Name), ?searchTerm) || REGEX(LCASE(?item0Name), ?searchTerm))
-                BIND('${strProtector(searchTerm)}' AS ?searchTerm)
+                ?system a ?systemType .
+                ?system rdfs:label ?systemName .
+                FILTER(
+                    (?systemType=kg_1b:Report && REGEX(LCASE(?systemName), '${strProtector(searchTerm)}')) ||
+                    (
+                        (?systemType IN (kg_1b:DerivedSystem, kg_1b:SourceSystem))
+                        && (
+                            EXISTS {
+                                ?report a kg_1b:Report ; rdfs:label ?reportName .
+                                { ?report kg_1b:computedFrom ?system . } UNION {
+                                    ?report kg_1b:computedFrom ?system1 . ?system1 kg_1b:derivedFrom+ ?system .
+                                }
+                                FILTER(REGEX(LCASE(?reportName), '${strProtector(searchTerm)}'))
+                            }
+                        )
+                    )
+                )
             }
           `),
           {
@@ -77,7 +72,8 @@ const useFetchData = (searchTerm) => {
               searchTerm: searchTerm ?? '',
               systemUri: res.system.value,
               systemName: res.systemName.value,
-              systemType: res.systemType.value
+              systemType: res.systemType.value,
+              sourceType: '' // Initialize sourceType as empty
             },
             position: { x: 0, y: 0 },
             derivationIndex: 0
@@ -128,6 +124,17 @@ const useFetchData = (searchTerm) => {
           edgesArr = resultBindings.map(res => ({id: res.edge.value + res.origin.value + res.destination.value, source: res.origin.value, target: res.destination.value}));
           setEdgeData(edgesArr);
           console.log(edgesArr);
+
+          // Update nodesArr to set sourceType based on connected node's systemType
+          edgesArr.forEach(edge => {
+            const sourceNode = nodesArr.find(node => node.id === edge.source);
+            const targetNode = nodesArr.find(node => node.id === edge.target);
+            if (sourceNode && targetNode) {
+              targetNode.data.sourceType = sourceNode.systemType;
+            }
+          });
+
+          setNodeData(nodesArr);
         } else {
           edgesArr = [];
           setEdgeData([]); // No data found
@@ -166,10 +173,10 @@ const useFetchData = (searchTerm) => {
       //     {
       //       return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
       //     }
-  
+
       //     return isSourceSystem(systemsById.get(id));
       // };
-      
+
       // Assign an index for levels of derivation
       // Start with source systems
       for (let i = 0; i < nodesArr.length; i++)
@@ -210,7 +217,7 @@ const useFetchData = (searchTerm) => {
           {
             skipList.push(edgesArr[i].target);
           }
-        }        
+        }
 
         for (let i = 0; i < edgesArr.length; i++)
         {
