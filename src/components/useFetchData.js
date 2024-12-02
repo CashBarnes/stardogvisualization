@@ -28,27 +28,33 @@ const useFetchData = (searchTerm) => {
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-          SELECT DISTINCT
-            ?system ?systemName ?systemType
+            SELECT DISTINCT ?system ?systemName ?systemType
             FROM <kg_1b:>
             WHERE {
-                ?system a ?systemType .
-                ?system rdfs:label ?systemName .
-                FILTER(
-                    (?systemType=kg_1b:Report && REGEX(LCASE(?systemName), '${strProtector(searchTerm)}')) ||
-                    (
-                        (?systemType IN (kg_1b:DerivedSystem, kg_1b:SourceSystem))
-                        && (
-                            EXISTS {
-                                ?report a kg_1b:Report ; rdfs:label ?reportName .
-                                { ?report kg_1b:computedFrom ?system . } UNION {
-                                    ?report kg_1b:computedFrom ?system1 . ?system1 kg_1b:derivedFrom+ ?system .
-                                }
-                                FILTER(REGEX(LCASE(?reportName), '${strProtector(searchTerm)}'))
-                            }
-                        )
-                    )
-                )
+                ?system0 (kg_1b:hasSection|kg_1b:hasTable) ?group0 ; rdfs:label ?system0Name .
+                ?group0 (kg_1b:hasBusinessElement|kg_1b:hasField) ?item0 ; rdfs:label ?group0Name .
+                ?item0 rdfs:label ?item0Name .
+                { 
+                    ?system0 
+                    a ?systemType ; 
+                            rdfs:label ?systemName .
+                    BIND(?system0 AS ?system)
+                }
+                UNION 
+                {
+                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group ; 
+                        (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system0 .
+                    ?system a ?systemType ; rdfs:label ?systemName .
+                } 
+                UNION 
+                {
+                    ?system0 (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system .
+                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group .
+                    ?system a ?systemType ; rdfs:label ?systemName .
+                }
+                FILTER(?systemType!=kg_1b:DataSystem)
+                FILTER(REGEX(LCASE(?system0Name), ?searchTerm) || REGEX(LCASE(?group0Name), ?searchTerm) || REGEX(LCASE(?item0Name), ?searchTerm))
+                BIND('${strProtector(searchTerm)}' AS ?searchTerm)
             }
           `),
           {
@@ -79,7 +85,7 @@ const useFetchData = (searchTerm) => {
             derivationIndex: 0
           }));
           setNodeData(nodesArr);
-          console.log(nodesArr);
+          // console.log(nodesArr);
         } else {
           nodesArr = [];
           setNodeData([]); // No data found
@@ -123,7 +129,7 @@ const useFetchData = (searchTerm) => {
           const resultBindings = response.data.results.bindings??[];
           edgesArr = resultBindings.map(res => ({id: res.edge.value + res.origin.value + res.destination.value, source: res.origin.value, target: res.destination.value}));
           setEdgeData(edgesArr);
-          console.log(edgesArr);
+          // console.log(edgesArr);
 
           // Update nodesArr to set sourceType based on connected node's systemType
           edgesArr.forEach(edge => {
@@ -288,6 +294,7 @@ const useFetchData = (searchTerm) => {
       // Choose which source handle an edge should use based on whether it feeds into a report or a system
       for (let i = 0; i < edgesArr.length; i++)
       {
+        // console.log(isReportById(edgesArr[i].target));
         if (isReportById(edgesArr[i].target))
         {
           edgesArr[i].sourceHandle = "a";
@@ -296,10 +303,11 @@ const useFetchData = (searchTerm) => {
         {
           edgesArr[i].sourceHandle = "b";
           edgesArr[i].style = { stroke: redHandleColor };
+          // console.log("line should be red");
         }
       }
 
-      console.log(nodesArr);
+      console.log("query edges arr", edgesArr);
       setNodeData(nodesArr);
       setEdgeData(edgesArr);
     };

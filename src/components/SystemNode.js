@@ -82,7 +82,7 @@ const styles = {
   }
 };
 
-const SystemNode = memo(function SystemNode({ data, sourceType }) {
+const SystemNode = memo(function SystemNode({ data }) {
   const [systemDetails, setSystemDetails] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
@@ -116,7 +116,7 @@ const SystemNode = memo(function SystemNode({ data, sourceType }) {
       return newSet;
     });
   }, []);
-  console.log("sys type: ", data.systemType, " source type: ", data.sourceType)
+  // console.log("sys type: ", data.systemType, " source type: ", data.sourceType)
   return (
     <div
       style={{
@@ -134,7 +134,7 @@ const SystemNode = memo(function SystemNode({ data, sourceType }) {
         (
           <Handle
             type="target"
-            position={Position.Top}
+            position={Position.Left}
             style={styles.redHandle}
           />
         )
