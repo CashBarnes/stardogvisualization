@@ -140,7 +140,7 @@ const useFetchData = (searchTerm) => {
             }
           });
 
-          setNodeData(nodesArr);
+          // setNodeData(nodesArr);
         } else {
           edgesArr = [];
           setEdgeData([]); // No data found
