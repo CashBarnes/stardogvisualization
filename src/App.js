@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import useFetchData from './components/useFetchData';
 import Dashboard from './components/FlowTest';
 import DashboardCharts from './components/DashboardCharts';
+import { handleAddData } from './util/funcs';
 
 const App = () => {
   const [showDashboard, setShowDashboard] = useState(true); // State to control dashboard visibility
@@ -32,14 +33,21 @@ const App = () => {
       <h1>Stardog Query Results</h1>
       {error && <p>Connection failed: {error}</p>}
 
-      {/* Search input */}
-      <input
-        type="text"
-        value={searchTerm}
-        onChange={handleSearchChange}
-        placeholder="Search Report"
-        style={{ marginBottom: '10px', width: '100%' }}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          placeholder="Search Report"
+          style={{ flex: 1 }}
+        />
+        <button
+          style={{ marginLeft: '10px' }}
+          onClick={handleAddData}
+        >
+          Add Data
+        </button>
+      </div>
 
       {/*/!* Conditionally render the DashboardCharts above the original dashboard *!/*/}
       {/*{showDashboardCharts && <DashboardCharts data={data} />}*/}
