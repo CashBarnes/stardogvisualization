@@ -136,7 +136,12 @@ const useFetchData = (searchTerm) => {
             const sourceNode = nodesArr.find(node => node.id === edge.source);
             const targetNode = nodesArr.find(node => node.id === edge.target);
             if (sourceNode && targetNode) {
-              targetNode.data.sourceType = sourceNode.systemType;
+              if (targetNode.data.sourceType !== '' && targetNode.data.sourceType !== sourceNode.sourceType) {
+                targetNode.data.sourceType = 'both';
+              }
+              else {
+                targetNode.data.sourceType = sourceNode.systemType;
+              }
             }
           });
 
@@ -174,14 +179,14 @@ const useFetchData = (searchTerm) => {
       };
 
       // Currently unused, but kept here for convenience in case it is needed later
-      // const isSourceSystemById = (id) => {
-      //   if(!systemsById.has(id))
-      //     {
-      //       return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
-      //     }
+      const isSourceSystemById = (id) => {
+        if(!systemsById.has(id))
+          {
+            return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+          }
 
-      //     return isSourceSystem(systemsById.get(id));
-      // };
+          return isSourceSystem(systemsById.get(id));
+      };
 
       // Assign an index for levels of derivation
       // Start with source systems
@@ -298,12 +303,18 @@ const useFetchData = (searchTerm) => {
         if (isReportById(edgesArr[i].target))
         {
           edgesArr[i].sourceHandle = "a";
+          edgesArr[i].targetHandle = "left";
         }
         else
         {
+          if (!isSourceSystemById(edgesArr[i].source)){
+            edgesArr[i].targetHandle = "top";
+          }
+          else {
+            edgesArr[i].targetHandle = "left";
+          }
           edgesArr[i].sourceHandle = "b";
           edgesArr[i].style = { stroke: redHandleColor };
-          // console.log("line should be red");
         }
       }
 

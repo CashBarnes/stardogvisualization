@@ -128,24 +128,26 @@ const SystemNode = memo(function SystemNode({ data }) {
     >
 
       {
-        (data.systemType.toLowerCase().endsWith(derivedSystemType) && !data.systemType.toLowerCase().endsWith(reportType) && data.sourceType.toLowerCase().endsWith(derivedSystemType))
+        (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(derivedSystemType) || data.sourceType === 'both'))
         // !data.systemType.toLowerCase().endsWith(sourceSystemType)
         &&
         (
           <Handle
             type="target"
-            position={Position.Left}
+            id="top"
+            position={Position.Top}
             style={styles.redHandle}
           />
         )
       }
             {
-        (data.systemType.toLowerCase().endsWith(derivedSystemType) && !data.systemType.toLowerCase().endsWith(reportType) && !data.sourceType.toLowerCase().endsWith(derivedSystemType))
+        (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both'))
         // !data.systemType.toLowerCase().endsWith(sourceSystemType)
         &&
         (
           <Handle
             type="target"
+            id="left"
             position={Position.Left}
             style={styles.redHandle}
           />
@@ -158,6 +160,7 @@ const SystemNode = memo(function SystemNode({ data }) {
         (
           <Handle
             type="target"
+            id = 'left'
             position={Position.Left}
             style={styles.handle}
           />
@@ -223,7 +226,22 @@ const SystemNode = memo(function SystemNode({ data }) {
     )
     }
     {
-      !data.systemType.toLowerCase().endsWith(reportType)
+      data.systemType.toLowerCase().endsWith(derivedSystemType)
+      &&
+    (
+    <Handle
+      type="source"
+      position={Position.Bottom}
+      id="b"
+      style={{
+        ...styles.redHandle,
+        // top: '70%',
+      }}
+    />
+    )
+    }
+    {
+      data.systemType.toLowerCase().endsWith(sourceSystemType)
       &&
     (
     <Handle
