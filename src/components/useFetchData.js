@@ -20,6 +20,14 @@ const useFetchData = (searchTerm) => {
   const isReport = (node) => { return node.systemType.toLowerCase().endsWith(reportType); };
   const isSourceSystem = (node) => { return node.systemType.toLowerCase().endsWith(sourceSystemType); };
 
+  const systemsById = new Map(); // Used to quickly look up data on nodes during
+
+  const isReportById = (id) => { if(!systemsById.has(id)) { return false; } return isReport(systemsById.get(id)); };
+
+  // const hasOutgoingEdges = (nodeId) => { return edgesArr.some(edge => edge.source === nodeId); };
+
+  const hasOutgoingEdges = (nodeId) => { return edgesArr.find(edge => edge.source === nodeId && !isReportById(edge.target)); };
+
   const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
 
   useEffect(() => {
@@ -79,7 +87,8 @@ const useFetchData = (searchTerm) => {
               systemUri: res.system.value,
               systemName: res.systemName.value,
               systemType: res.systemType.value,
-              sourceType: '' // Initialize sourceType as empty
+              sourceType: '',
+              hasOutgoingEdges: true
             },
             position: { x: 0, y: 0 },
             derivationIndex: 0
@@ -157,7 +166,7 @@ const useFetchData = (searchTerm) => {
       // Iterate through edge data
       let indexedSystems = [];
       let numberOfSystems = nodesArr.length;
-      const systemsById = new Map(); // Used to quickly look up data on nodes during loops
+      // const systemsById = new Map(); // Used to quickly look up data on nodes during loops
 
       for (let i = 0; i < nodesArr.length; i++)
       {
@@ -165,18 +174,20 @@ const useFetchData = (searchTerm) => {
         {
           continue; // Should not be possible, but prevents errors for bad data.
         }
+        nodesArr[i].data.hasOutgoingEdges = hasOutgoingEdges(nodesArr[i].id);
+        console.log("ID: ", nodesArr[i].id, " has outgoing edge: ", nodesArr[i].data.hasOutgoingEdges);
 
         systemsById.set(nodesArr[i].id, nodesArr[i]);
       }
 
-      const isReportById = (id) => {
-        if(!systemsById.has(id))
-        {
-          return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
-        }
-
-        return isReport(systemsById.get(id));
-      };
+      // const isReportById = (id) => {
+      //   if(!systemsById.has(id))
+      //   {
+      //     return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+      //   }
+      //
+      //   return isReport(systemsById.get(id));
+      // };
 
       // Currently unused, but kept here for convenience in case it is needed later
       const isSourceSystemById = (id) => {
@@ -318,7 +329,7 @@ const useFetchData = (searchTerm) => {
         }
       }
 
-      console.log("query edges arr", edgesArr);
+      // console.log("query edges arr", edgesArr);
       setNodeData(nodesArr);
       setEdgeData(edgesArr);
     };

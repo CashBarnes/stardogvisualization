@@ -14,7 +14,7 @@ const defaultEdgeOptions = {
 
 function Dashboard({ searchTerm }) {
   const { nodeData, setNodeData, edgeData } = useFetchData(searchTerm);
-  console.log("Flow Test edgeData", edgeData)
+  // console.log("Flow Test edgeData", edgeData)
   const onNodesChange = useCallback(
     (changes) => setNodeData((nds) => applyNodeChanges(changes, nds)),
     [setNodeData]

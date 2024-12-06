@@ -99,6 +99,7 @@ const SystemNode = memo(function SystemNode({ data }) {
     try {
       const results = await fetchSystemDetails(data?.systemUri ?? '');
       setSystemDetails(results ?? []);
+      console.log("system node outgoing edges: ", data.hasOutgoingEdges)
     } catch (error) {
       console.error('Error fetching system details:', error);
       setSystemDetails([]);
@@ -238,7 +239,7 @@ const SystemNode = memo(function SystemNode({ data }) {
     )
     }
     {
-      data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both')
+      data.systemType.toLowerCase().endsWith(derivedSystemType) && data.hasOutgoingEdges && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both')
       &&
     (
     <Handle
