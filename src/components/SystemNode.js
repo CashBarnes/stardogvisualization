@@ -129,7 +129,6 @@ const SystemNode = memo(function SystemNode({ data }) {
 
       {
         (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(derivedSystemType) || data.sourceType === 'both'))
-        // !data.systemType.toLowerCase().endsWith(sourceSystemType)
         &&
         (
           <Handle
@@ -142,7 +141,6 @@ const SystemNode = memo(function SystemNode({ data }) {
       }
             {
         (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both'))
-        // !data.systemType.toLowerCase().endsWith(sourceSystemType)
         &&
         (
           <Handle
@@ -155,7 +153,6 @@ const SystemNode = memo(function SystemNode({ data }) {
       }
       {
         (!data.systemType.toLowerCase().endsWith(derivedSystemType) && data.systemType.toLowerCase().endsWith(reportType))
-        // !data.systemType.toLowerCase().endsWith(sourceSystemType)
         &&
         (
           <Handle
@@ -211,7 +208,7 @@ const SystemNode = memo(function SystemNode({ data }) {
       )}
 
     {
-      !data.systemType.toLowerCase().endsWith(reportType)
+      data.systemType.toLowerCase().endsWith(sourceSystemType)
       &&
     (
     <Handle
@@ -227,6 +224,21 @@ const SystemNode = memo(function SystemNode({ data }) {
     }
     {
       data.systemType.toLowerCase().endsWith(derivedSystemType)
+      &&
+    (
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="a"
+      style={{
+        ...styles.handle,
+        // top: '30%',
+      }}
+    />
+    )
+    }
+    {
+      data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both')
       &&
     (
     <Handle
@@ -262,3 +274,4 @@ const SystemNode = memo(function SystemNode({ data }) {
 SystemNode.displayName = 'SystemNode';
 
 export default SystemNode;
+

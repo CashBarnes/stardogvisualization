@@ -136,7 +136,7 @@ const useFetchData = (searchTerm) => {
             const sourceNode = nodesArr.find(node => node.id === edge.source);
             const targetNode = nodesArr.find(node => node.id === edge.target);
             if (sourceNode && targetNode) {
-              if (targetNode.data.sourceType !== '' && targetNode.data.sourceType !== sourceNode.sourceType) {
+              if (targetNode.data.sourceType !== '' && targetNode.data.sourceType !== sourceNode.systemType) {
                 targetNode.data.sourceType = 'both';
               }
               else {
