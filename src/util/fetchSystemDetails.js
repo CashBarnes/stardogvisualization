@@ -1,5 +1,6 @@
 import axios from "axios";
-import { STARDOG_URL, STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
+import { STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
+import {STARDOG_URL} from "../endpoints";
 
 export async function fetchSystemDetails(systemUri) {
   if (systemUri?.trim() !== '') {

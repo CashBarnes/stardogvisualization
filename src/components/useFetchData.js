@@ -1,6 +1,8 @@
+// src/components/useFetchData.js
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { STARDOG_URL, STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
+import { STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
+import {STARDOG_URL} from "../endpoints";
 
 const useFetchData = (searchTerm) => {
   const [nodeData, setNodeData] = useState([]);
@@ -19,9 +21,18 @@ const useFetchData = (searchTerm) => {
   const isReport = (node) => { return node.systemType.toLowerCase().endsWith(reportType); };
   const isSourceSystem = (node) => { return node.systemType.toLowerCase().endsWith(sourceSystemType); };
 
+  const systemsById = new Map(); // Used to quickly look up data on nodes during
+
+  const isReportById = (id) => { if(!systemsById.has(id)) { return false; } return isReport(systemsById.get(id)); };
+
+  // const hasOutgoingEdges = (nodeId) => { return edgesArr.some(edge => edge.source === nodeId); };
+
+  const hasOutgoingEdges = (nodeId) => { return edgesArr.find(edge => edge.source === nodeId && !isReportById(edge.target)); };
+  const hasReportEdges = (nodeId) => { return edgesArr.find(edge => edge.source === nodeId && isReportById(edge.target)); };
+
   const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.post(
@@ -77,13 +88,16 @@ const useFetchData = (searchTerm) => {
               searchTerm: searchTerm ?? '',
               systemUri: res.system.value,
               systemName: res.systemName.value,
-              systemType: res.systemType.value
+              systemType: res.systemType.value,
+              sourceType: '',
+              hasOutgoingEdges: true,
+              hasReportEdges: true
             },
             position: { x: 0, y: 0 },
             derivationIndex: 0
           }));
           setNodeData(nodesArr);
-          console.log(nodesArr);
+          // console.log(nodesArr);
         } else {
           nodesArr = [];
           setNodeData([]); // No data found
@@ -127,7 +141,23 @@ const useFetchData = (searchTerm) => {
           const resultBindings = response.data.results.bindings??[];
           edgesArr = resultBindings.map(res => ({id: res.edge.value + res.origin.value + res.destination.value, source: res.origin.value, target: res.destination.value}));
           setEdgeData(edgesArr);
-          console.log(edgesArr);
+          // console.log(edgesArr);
+
+          // Update nodesArr to set sourceType based on connected node's systemType
+          edgesArr.forEach(edge => {
+            const sourceNode = nodesArr.find(node => node.id === edge.source);
+            const targetNode = nodesArr.find(node => node.id === edge.target);
+            if (sourceNode && targetNode) {
+              if (targetNode.data.sourceType !== '' && targetNode.data.sourceType !== sourceNode.systemType) {
+                targetNode.data.sourceType = 'both';
+              }
+              else {
+                targetNode.data.sourceType = sourceNode.systemType;
+              }
+            }
+          });
+
+          // setNodeData(nodesArr);
         } else {
           edgesArr = [];
           setEdgeData([]); // No data found
@@ -139,7 +169,7 @@ const useFetchData = (searchTerm) => {
       // Iterate through edge data
       let indexedSystems = [];
       let numberOfSystems = nodesArr.length;
-      const systemsById = new Map(); // Used to quickly look up data on nodes during loops
+      // const systemsById = new Map(); // Used to quickly look up data on nodes during loops
 
       for (let i = 0; i < nodesArr.length; i++)
       {
@@ -151,25 +181,36 @@ const useFetchData = (searchTerm) => {
         systemsById.set(nodesArr[i].id, nodesArr[i]);
       }
 
-      const isReportById = (id) => {
-        if(!systemsById.has(id))
+      for (let i = 0; i < nodesArr.length; i++)
+      {
+        if (nodesArr[i].id === null || nodesArr[i].id === undefined)
         {
-          return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+          continue; // Should not be possible, but prevents errors for bad data.
         }
+        nodesArr[i].data.hasOutgoingEdges = hasOutgoingEdges(nodesArr[i].id);
+        nodesArr[i].data.hasReportEdges = hasReportEdges(nodesArr[i].id);
+        console.log("ID: ", nodesArr[i].id, " has report edge: ", nodesArr[i].data.hasReportEdges);
+      }
 
-        return isReport(systemsById.get(id));
-      };
+      // const isReportById = (id) => {
+      //   if(!systemsById.has(id))
+      //   {
+      //     return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+      //   }
+      //
+      //   return isReport(systemsById.get(id));
+      // };
 
       // Currently unused, but kept here for convenience in case it is needed later
-      // const isSourceSystemById = (id) => {
-      //   if(!systemsById.has(id))
-      //     {
-      //       return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
-      //     }
-  
-      //     return isSourceSystem(systemsById.get(id));
-      // };
-      
+      const isSourceSystemById = (id) => {
+        if(!systemsById.has(id))
+          {
+            return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+          }
+
+          return isSourceSystem(systemsById.get(id));
+      };
+
       // Assign an index for levels of derivation
       // Start with source systems
       for (let i = 0; i < nodesArr.length; i++)
@@ -210,7 +251,7 @@ const useFetchData = (searchTerm) => {
           {
             skipList.push(edgesArr[i].target);
           }
-        }        
+        }
 
         for (let i = 0; i < edgesArr.length; i++)
         {
@@ -281,18 +322,26 @@ const useFetchData = (searchTerm) => {
       // Choose which source handle an edge should use based on whether it feeds into a report or a system
       for (let i = 0; i < edgesArr.length; i++)
       {
+        // console.log(isReportById(edgesArr[i].target));
         if (isReportById(edgesArr[i].target))
         {
           edgesArr[i].sourceHandle = "a";
+          edgesArr[i].targetHandle = "left";
         }
         else
         {
+          if (!isSourceSystemById(edgesArr[i].source)){
+            edgesArr[i].targetHandle = "top";
+          }
+          else {
+            edgesArr[i].targetHandle = "left";
+          }
           edgesArr[i].sourceHandle = "b";
           edgesArr[i].style = { stroke: redHandleColor };
         }
       }
 
-      console.log(nodesArr);
+      // console.log("query edges arr", edgesArr);
       setNodeData(nodesArr);
       setEdgeData(edgesArr);
     };

@@ -73,6 +73,12 @@ const styles = {
     height: '8px',
     backgroundColor: '#e00546',
     border: 'none',
+  },
+  greenHandle: {
+    width: '8px',
+    height: '8px',
+    backgroundColor: '#8fce00',
+    border: 'none',
   }
 };
 
@@ -82,7 +88,7 @@ const SystemNode = memo(function SystemNode({ data }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const sourceSystemType = "sourcesystem";
-  const derivedSystemType = "derivedsystem"
+  const derivedSystemType = "derivedsystem";
   const reportType = "report";
 
   useEffect(() => {
@@ -93,6 +99,7 @@ const SystemNode = memo(function SystemNode({ data }) {
     try {
       const results = await fetchSystemDetails(data?.systemUri ?? '');
       setSystemDetails(results ?? []);
+      console.log("system node outgoing edges: ", data.hasOutgoingEdges)
     } catch (error) {
       console.error('Error fetching system details:', error);
       setSystemDetails([]);
@@ -110,7 +117,7 @@ const SystemNode = memo(function SystemNode({ data }) {
       return newSet;
     });
   }, []);
-
+  // console.log("sys type: ", data.systemType, " source type: ", data.sourceType)
   return (
     <div
       style={{
@@ -122,14 +129,38 @@ const SystemNode = memo(function SystemNode({ data }) {
     >
 
       {
-        // (data.systemType.toLowerCase().endsWith(derivedSystemType) && !data.systemType.toLowerCase().endsWith(reportType))
-        !data.systemType.toLowerCase().endsWith(sourceSystemType)
+        (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(derivedSystemType) || data.sourceType === 'both'))
         &&
         (
           <Handle
             type="target"
+            id="top"
+            position={Position.Top}
+            style={styles.redHandle}
+          />
+        )
+      }
+            {
+        (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both'))
+        &&
+        (
+          <Handle
+            type="target"
+            id="left"
             position={Position.Left}
-            style={data.systemType.toLowerCase().endsWith(reportType) ? styles.handle : styles.redHandle}
+            style={styles.redHandle}
+          />
+        )
+      }
+      {
+        (!data.systemType.toLowerCase().endsWith(derivedSystemType) && data.systemType.toLowerCase().endsWith(reportType))
+        &&
+        (
+          <Handle
+            type="target"
+            id = 'left'
+            position={Position.Left}
+            style={styles.handle}
           />
         )
       }
@@ -178,7 +209,7 @@ const SystemNode = memo(function SystemNode({ data }) {
       )}
 
     {
-      !data.systemType.toLowerCase().endsWith(reportType)
+      data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges
       &&
     (
     <Handle
@@ -189,11 +220,41 @@ const SystemNode = memo(function SystemNode({ data }) {
         ...styles.handle,
         top: '30%',
       }}
-    />      
+    />
     )
     }
     {
-      !data.systemType.toLowerCase().endsWith(reportType)
+      data.systemType.toLowerCase().endsWith(derivedSystemType) && data.hasReportEdges
+      &&
+    (
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="a"
+      style={{
+        ...styles.handle,
+        // top: '30%',
+      }}
+    />
+    )
+    }
+    {
+      data.systemType.toLowerCase().endsWith(derivedSystemType) && data.hasOutgoingEdges && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both')
+      &&
+    (
+    <Handle
+      type="source"
+      position={Position.Bottom}
+      id="b"
+      style={{
+        ...styles.redHandle,
+        // top: '70%',
+      }}
+    />
+    )
+    }
+    {
+      data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasOutgoingEdges
       &&
     (
     <Handle
@@ -214,3 +275,4 @@ const SystemNode = memo(function SystemNode({ data }) {
 SystemNode.displayName = 'SystemNode';
 
 export default SystemNode;
+
