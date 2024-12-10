@@ -1,5 +1,6 @@
 import axios from "axios";
-import { STARDOG_URL, STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
+import { STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
+import {STARDOG_UPDATE} from "../endpoints";
 
 export async function postAdditionalData(queryStr) {
   try {
@@ -7,7 +8,7 @@ export async function postAdditionalData(queryStr) {
     console.log(`src/util/postAdditionalData.js`, `| queryStr:`, queryStr);
 
     await axios.post(
-      STARDOG_URL,
+      STARDOG_UPDATE,
       'query=' + encodeURIComponent(queryStr),
       {
         auth: {
@@ -22,6 +23,7 @@ export async function postAdditionalData(queryStr) {
     );
 
   } catch (err) {
-    console.error(`src/util/postAdditionalData.js`, `| ERROR:`, err);
+    // console.error(`src/util/postAdditionalData.js`, `| ERROR:`, err);
+      console.error(`src/util/postAdditionalData.js`, `| ERROR:`, err.response ? err.response.data : err);
   }
 }

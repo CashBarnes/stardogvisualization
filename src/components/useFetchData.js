@@ -1,7 +1,8 @@
 // src/components/useFetchData.js
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { STARDOG_URL, STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
+import { STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
+import {STARDOG_URL} from "../endpoints";
 
 const useFetchData = (searchTerm) => {
   const [nodeData, setNodeData] = useState([]);
