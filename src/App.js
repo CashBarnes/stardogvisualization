@@ -7,6 +7,7 @@ import { handleAddData } from './util/funcs';
 const App = () => {
   const [showDashboard, setShowDashboard] = useState(true); // State to control dashboard visibility
   const [showDashboardCharts, setShowDashboardCharts] = useState(false); // State to control DashboardCharts visibility
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const { data, storedData, setData, error } = useFetchData();
 
@@ -23,8 +24,7 @@ const App = () => {
   // Handle search change
   const handleSearchChange = (e) => {
     const input = e.target.value.toLowerCase();
-    setSearchTerm(input);
-
+    setSearchInput(input);
   };
 
 
@@ -36,15 +36,22 @@ const App = () => {
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
         <input
           type="text"
-          value={searchTerm}
+          value={searchInput}
           onChange={handleSearchChange}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              setSearchTerm(searchInput);
+            }
+          }}
           placeholder="Search Report"
           style={{ flex: 1 }}
         />
-        <button
-          style={{ marginLeft: '10px' }}
-          onClick={handleAddData}
-        >
+
+        <button style={{ marginLeft: '10px' }} onClick={() => setSearchTerm(searchInput)}>
+          Search
+        </button>
+
+        <button style={{ marginLeft: '30px' }} onClick={handleAddData}>
           Add Data
         </button>
       </div>

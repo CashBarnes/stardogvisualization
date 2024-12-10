@@ -209,7 +209,7 @@ const SystemNode = memo(function SystemNode({ data }) {
       )}
 
     {
-      data.systemType.toLowerCase().endsWith(sourceSystemType)
+      data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges
       &&
     (
     <Handle
@@ -224,7 +224,7 @@ const SystemNode = memo(function SystemNode({ data }) {
     )
     }
     {
-      data.systemType.toLowerCase().endsWith(derivedSystemType)
+      data.systemType.toLowerCase().endsWith(derivedSystemType) && data.hasReportEdges
       &&
     (
     <Handle
@@ -254,7 +254,7 @@ const SystemNode = memo(function SystemNode({ data }) {
     )
     }
     {
-      data.systemType.toLowerCase().endsWith(sourceSystemType)
+      data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasOutgoingEdges
       &&
     (
     <Handle

@@ -27,6 +27,7 @@ const useFetchData = (searchTerm) => {
   // const hasOutgoingEdges = (nodeId) => { return edgesArr.some(edge => edge.source === nodeId); };
 
   const hasOutgoingEdges = (nodeId) => { return edgesArr.find(edge => edge.source === nodeId && !isReportById(edge.target)); };
+  const hasReportEdges = (nodeId) => { return edgesArr.find(edge => edge.source === nodeId && isReportById(edge.target)); };
 
   const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
 
@@ -88,7 +89,8 @@ const useFetchData = (searchTerm) => {
               systemName: res.systemName.value,
               systemType: res.systemType.value,
               sourceType: '',
-              hasOutgoingEdges: true
+              hasOutgoingEdges: true,
+              hasReportEdges: true
             },
             position: { x: 0, y: 0 },
             derivationIndex: 0
@@ -174,10 +176,19 @@ const useFetchData = (searchTerm) => {
         {
           continue; // Should not be possible, but prevents errors for bad data.
         }
-        nodesArr[i].data.hasOutgoingEdges = hasOutgoingEdges(nodesArr[i].id);
-        console.log("ID: ", nodesArr[i].id, " has outgoing edge: ", nodesArr[i].data.hasOutgoingEdges);
 
         systemsById.set(nodesArr[i].id, nodesArr[i]);
+      }
+
+      for (let i = 0; i < nodesArr.length; i++)
+      {
+        if (nodesArr[i].id === null || nodesArr[i].id === undefined)
+        {
+          continue; // Should not be possible, but prevents errors for bad data.
+        }
+        nodesArr[i].data.hasOutgoingEdges = hasOutgoingEdges(nodesArr[i].id);
+        nodesArr[i].data.hasReportEdges = hasReportEdges(nodesArr[i].id);
+        console.log("ID: ", nodesArr[i].id, " has report edge: ", nodesArr[i].data.hasReportEdges);
       }
 
       // const isReportById = (id) => {

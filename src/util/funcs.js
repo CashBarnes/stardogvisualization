@@ -1,6 +1,7 @@
 import Papa from 'papaparse';
+import { postAdditionalData } from './postAdditionalData';
 
-export const handleAddData = () => {
+export const handleAddData = async () => {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.csv';
@@ -16,7 +17,7 @@ export const handleAddData = () => {
         header: true,
         dynamicTyping: true,
         complete: (results) => {
-          const jsonData = results.data;
+          const jsonData = results.data.filter(d => (d.reportId !== null));
 
           // Create structured data from CSV
           const reports = jsonData.reduce((acc, item) => {
@@ -69,20 +70,12 @@ export const handleAddData = () => {
             let section = report.sections.find(s => s.sectionName === reportSection);
             if (!section) {
               section = {
-                sectionId: reportSection,
+                sectionId: reportSection.replaceAll(' ', ''),
                 sectionName: reportSection,
                 businessElements: [],
                 systems: []
               };
               report.sections.push(section);
-            }
-
-            // Add businessElement to the section
-            if (!section.businessElements.find(b => b.businessElementName === reportBusinessElement)) {
-              section.businessElements.push({
-                businessElementName: reportBusinessElement,
-                systems: []
-              });
             }
 
             // Add system to the section
@@ -108,8 +101,44 @@ export const handleAddData = () => {
               sectionTable.fields.push(systemField);
             }
 
+            // Add businessElement to the section
+            let be = section.businessElements.find(b => b.beName === reportBusinessElement);
+            if (!be) {
+              be = {
+                beId: reportBusinessElement.replaceAll(' ', ''),
+                beName: reportBusinessElement,
+                systems: []
+              };
+              section.businessElements.push(be);
+            }
+
+            // Add system to the section
+            if (!be.systems.find(b => b.systemId === systemId)) {
+              be.systems.push({
+                systemId,
+                tables: []
+              });
+            }
+
+            // Add systemTable to the section's system
+            const beSystem = be.systems.find(s => s.systemId === systemId);
+            if (!beSystem.tables.find(t => t.tableName === systemTable)) {
+              beSystem.tables.push({
+                tableName: systemTable,
+                fields: []
+              });
+            }
+
+            // Add systemField to the systemTable
+            const beTable = beSystem.tables.find(t => t.tableName === systemTable);
+            if (!beTable.fields.includes(systemField)) {
+              beTable.fields.push(systemField);
+            }
+
             return acc;
           }, []);
+
+          // console.log(`src/util/funcs.js`, `| reports:`, reports);
 
           // Generate SPARQL INSERT query
           let sparqlInsert = `
@@ -117,65 +146,64 @@ INSERT DATA {
   GRAPH <kg_1b:> {
 `;
 
-      //     reports.forEach(report => {
-      //       sparqlInsert += `    kg_1b:${report.reportId} a kg_1b:Report ;
-      // rdfs:label "${report.reportName}" .\n`;
+          reports.forEach(report => {
+            sparqlInsert += `    kg_1b:${report.reportId} a kg_1b:Report ;
+      rdfs:label "${report.reportName}" .\n`;
 
-      //       report.systems.forEach(system => {
-      //         sparqlInsert += `    kg_1b:${report.reportId} kg_1b:computedFrom kg_1b:${system.systemId} .\n`;
+            report.systems.forEach(system => {
+              sparqlInsert += `    kg_1b:${report.reportId} kg_1b:computedFrom kg_1b:${system.systemId} .\n`;
 
-      //         system.tables.forEach(table => {
-      //           sparqlInsert += `    kg_1b:${system.systemId} kg_1b:hasTable kg_1b:${table.tableName} .\n`;
+              system.tables.forEach(table => {
+                sparqlInsert += `    kg_1b:${report.reportId} kg_1b:computedFrom kg_1b:${table.tableName} .\n`;
 
-      //           table.fields.forEach(field => {
-      //             sparqlInsert += `    kg_1b:${table.tableName} kg_1b:hasField kg_1b:${field} .\n`;
-      //           });
-      //         });
-      //       });
+                table.fields.forEach(field => {
+                  sparqlInsert += `    kg_1b:${report.reportId} kg_1b:computedFrom kg_1b:${field} .\n`;
+                });
+              });
+            });
 
-      //       report.sections.forEach(section => {
-      //         sparqlInsert += `    kg_1b:${report.reportId} kg_1b:hasSection kg_1b:${section.sectionId} .\n`;
+            report.sections.forEach(section => {
+              sparqlInsert += `    kg_1b:${report.reportId} kg_1b:hasSection kg_1b:${section.sectionId} .
+    kg_1b:${section.sectionId} a kg_1b:ReportSection ; rdfs:label "${section.sectionName}" .\n`;
 
-      //         section.businessElements.forEach(be => {
-      //           sparqlInsert += `    kg_1b:${sectionId} rdfs:label "${section.sectionName}" ;
-      // kg_1b:hasBusinessElement kg_1b:${be.businessElementName} .\n`;
+              section.systems.forEach(system => {
+                sparqlInsert += `    kg_1b:${section.sectionId} kg_1b:computedFrom kg_1b:${system.systemId} .\n`;
 
-      //           be.systems.forEach(system => {
-      //             sparqlInsert += `    kg_1b:${be.businessElementName} kg_1b:computedFrom kg_1b:${system.systemId} .\n`;
+                system.tables.forEach(table => {
+                  sparqlInsert += `    kg_1b:${section.sectionId} kg_1b:computedFrom kg_1b:${table.tableName} .\n`;
 
-      //             system.tables.forEach(table => {
-      //               sparqlInsert += `    kg_1b:${table.tableName} a kg_1b:SystemTable ;
-      // kg_1b:belongsTo kg_1b:${system.systemId} .\n`;
+                  table.fields.forEach(field => {
+                    sparqlInsert += `    kg_1b:${section.sectionId} kg_1b:computedFrom kg_1b:${field} .\n`;
+                  });
+                });
+              });
 
-      //               table.fields.forEach(field => {
-      //                 sparqlInsert += `    kg_1b:${field} a kg_1b:SystemField ;
-      // kg_1b:partOf kg_1b:${table.tableName} .\n`;
-      //               });
-      //             });
-      //           });
-      //         });
+              section.businessElements.forEach(be => {
+                sparqlInsert += `    kg_1b:${section.sectionId} kg_1b:hasBusinessElement kg_1b:${be.beId} .
+    kg_1b:${be.beId} a kg_1b:BusinessElement ; rdfs:label "${be.beName}" .\n`;
 
-      //         section.systems.forEach(system => {
-      //           sparqlInsert += `    kg_1b:${system.systemId} a kg_1b:System ;
-      // kg_1b:usedBy kg_1b:${section.sectionName} .\n`;
+                be.systems.forEach(system => {
+                  sparqlInsert += `    kg_1b:${be.beId} kg_1b:computedFrom kg_1b:${system.systemId} .\n`;
 
-      //           system.tables.forEach(table => {
-      //             sparqlInsert += `    kg_1b:${table.tableName} a kg_1b:SystemTable ;
-      // kg_1b:belongsTo kg_1b:${system.systemId} .\n`;
+                  system.tables.forEach(table => {
+                    sparqlInsert += `    kg_1b:${be.beId} kg_1b:computedFrom kg_1b:${table.tableName} .\n`;
 
-      //             table.fields.forEach(field => {
-      //               sparqlInsert += `    kg_1b:${field} a kg_1b:SystemField ;
-      // kg_1b:partOf kg_1b:${table.tableName} .\n`;
-      //             });
-      //           });
-      //         });
-      //       });
-      //     });
+                    table.fields.forEach(field => {
+                      sparqlInsert += `    kg_1b:${be.beId} kg_1b:computedFrom kg_1b:${field} .\n`;
+                    });
+                  });
+                });
+              });
+            });
+
+          });
 
           sparqlInsert += `  }
 }`;
 
           console.log(sparqlInsert);
+
+          postAdditionalData(sparqlInsert);
         }
       });
     };
