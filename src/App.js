@@ -27,6 +27,11 @@ const App = () => {
     setSearchInput(input);
   };
 
+  const handleReset = () => {
+  setSearchInput('');
+  setSearchTerm('');
+};
+
 
   return (
     <div>
@@ -60,7 +65,7 @@ const App = () => {
       {/*{showDashboardCharts && <DashboardCharts data={data} />}*/}
 
       {/* Conditionally render the Dashboard based on showDashboard */}
-      {showDashboard && <Dashboard data={data} searchTerm={searchTerm} />}
+      {showDashboard && <Dashboard data={data} searchTerm={searchTerm} onReset={handleReset} />}
     </div>
   );
 };

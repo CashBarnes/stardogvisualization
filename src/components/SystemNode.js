@@ -54,7 +54,9 @@ const styles = {
   item: {
     padding: '4px 8px',
     fontSize: '14px',
-    color: '#4b5563',
+    color: '#1d4ed8',
+    textDecoration: 'underline',
+    cursor: 'pointer',
     borderRadius: '4px',
   },
   itemCount: {
@@ -83,6 +85,7 @@ const styles = {
 };
 
 const SystemNode = memo(function SystemNode({ data }) {
+  const { onSearch, onReset } = data;
   const [systemDetails, setSystemDetails] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
@@ -92,19 +95,29 @@ const SystemNode = memo(function SystemNode({ data }) {
   const reportType = "report";
 
   useEffect(() => {
-    fetchData();
-  }, [data]);
+    let isMounted = true;
 
-  const fetchData = useCallback(async () => {
-    try {
-      const results = await fetchSystemDetails(data?.systemUri ?? '');
-      setSystemDetails(results ?? []);
-      console.log("system node outgoing edges: ", data.hasOutgoingEdges)
-    } catch (error) {
-      console.error('Error fetching system details:', error);
-      setSystemDetails([]);
-    }
-  }, [data?.systemUri]);
+    const fetchData = async () => {
+      try {
+        const results = await fetchSystemDetails(data?.systemUri ?? '');
+        if (isMounted) {
+          setSystemDetails(results ?? []);
+          console.log("system node outgoing edges: ", data.hasOutgoingEdges);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error fetching system details:', error);
+          setSystemDetails([]);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [data]);
 
   const toggleGroup = useCallback((groupName) => {
     setExpandedGroups(prev => {
@@ -197,6 +210,10 @@ const SystemNode = memo(function SystemNode({ data }) {
                     <div
                       key={`${item.name}-${itemIdx}`}
                       style={styles.item}
+                      onClick={() => {
+                        onReset();
+                        onSearch(item.name);
+                      }}
                     >
                       {item.name}
                     </div>
