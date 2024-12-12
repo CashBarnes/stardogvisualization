@@ -85,7 +85,7 @@ const styles = {
 };
 
 const SystemNode = memo(function SystemNode({ data }) {
-  const { onSearch, onReset } = data;
+  const { onSearch, onReset, groupList } = data;
   const [systemDetails, setSystemDetails] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
@@ -101,7 +101,7 @@ const SystemNode = memo(function SystemNode({ data }) {
       try {
         const results = await fetchSystemDetails(data?.systemUri ?? '');
         if (isMounted) {
-          setSystemDetails(results ?? []);
+          setSystemDetails(groupList);
           console.log("system node outgoing edges: ", data.hasOutgoingEdges);
         }
       } catch (error) {

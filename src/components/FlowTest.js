@@ -1,5 +1,5 @@
 import ReactFlow, { applyNodeChanges, MiniMap, Controls } from 'react-flow-renderer';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import useFetchData from './useFetchData';
 import SystemNode from './SystemNode';
 
@@ -12,13 +12,8 @@ const defaultEdgeOptions = {
   style: { stroke: '#4f46e5' }
 };
 
-function Dashboard({ searchTerm, onReset }) {
-  const [searchTermState, setSearchTermState] = useState(searchTerm);
-  const { nodeData, setNodeData, edgeData } = useFetchData(searchTermState);
-
-  useEffect(() => {
-    setSearchTermState(searchTerm);
-  }, [searchTerm]);
+function Dashboard({ searchTerm, onReset, setSearchTerm }) {
+  const { nodeData, setNodeData, edgeData } = useFetchData(searchTerm);
 
   const onNodesChange = useCallback(
     (changes) => setNodeData((nds) => applyNodeChanges(changes, nds)),
@@ -27,11 +22,11 @@ function Dashboard({ searchTerm, onReset }) {
 
   const handleSearch = (term) => {
     const lowerCaseTerm = term.toLowerCase();
-    setSearchTermState(lowerCaseTerm);
+    setSearchTerm(lowerCaseTerm);
   };
 
   const handleReset = () => {
-    setSearchTermState('');
+    setSearchTerm('');
     onReset();
   };
 

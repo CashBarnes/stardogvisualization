@@ -38,34 +38,62 @@ const useFetchData = (searchTerm) => {
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-            SELECT DISTINCT ?system ?systemName ?systemType
+          SELECT DISTINCT 
+            ?system ?systemName ?systemType 
+            (CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT(
+                '{ "uri": "',STR(?groupUri),'", "name" : "', ?groupName, '", "items": ['
+                ,?itemList
+                ,'] }'
+            ); SEPARATOR=", "),']') AS ?groupList)
             FROM <kg_1b:>
             WHERE {
-                ?system0 (kg_1b:hasSection|kg_1b:hasTable) ?group0 ; rdfs:label ?system0Name .
-                ?group0 (kg_1b:hasBusinessElement|kg_1b:hasField) ?item0 ; rdfs:label ?group0Name .
-                ?item0 rdfs:label ?item0Name .
+                ?sys0 (kg_1b:hasSection|kg_1b:hasTable) ?grp0 ; rdfs:label ?sys0Name .
+                ?grp0 (kg_1b:hasBusinessElement|kg_1b:hasField) ?itm0 ; rdfs:label ?grp0Name .
+                ?itm0 rdfs:label ?itm0Name .
                 { 
-                    ?system0 
-                    a ?systemType ; 
-                            rdfs:label ?systemName .
-                    BIND(?system0 AS ?system)
+                    ?sys0 a ?systemType ; 
+                        rdfs:label ?systemName ;
+                        (kg_1b:hasSection|kg_1b:hasTable) ?grp0 .
+                    ?grp0 rdfs:label ?groupName ; (kg_1b:hasBusinessElement|kg_1b:hasField) ?itm0 .
+                    BIND(?itm0 AS ?item)
+                    BIND(?sys0 AS ?system)
+                    BIND(?grp0 AS ?groupUri)
+                    
+                    {
+                        SELECT DISTINCT ?groupUri
+                        (COALESCE(GROUP_CONCAT(DISTINCT CONCAT('{"uri": "', STR(?item), '", "name": "', ?itemName, '"}'); SEPARATOR=", "), '') AS ?itemList)
+                        WHERE {
+                            ?groupUri (kg_1b:hasBusinessElement|kg_1b:hasField) ?item .
+                            ?item rdfs:label ?itemName .
+                        }
+                        GROUP BY ?groupUri
+                    }
                 }
                 UNION 
                 {
-                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group ; 
-                        (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system0 .
-                    ?system a ?systemType ; rdfs:label ?systemName .
-                } 
-                UNION 
-                {
-                    ?system0 (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?system .
-                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?group .
-                    ?system a ?systemType ; rdfs:label ?systemName .
+                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?groupUri ; a ?systemType ; rdfs:label ?systemName .
+                    ?groupUri rdfs:label ?groupName ; (kg_1b:hasField|kg_1b:hasBusinessElement) ?itemUri .
+                    {
+                        ?itemUri (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?itm0 .
+                    } UNION {
+                        ?itm0 (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?itemUri .
+                    }
+                    BIND(?itm0 AS ?itm1)
+                    {
+                        SELECT DISTINCT ?groupUri 
+                        (COALESCE(GROUP_CONCAT(DISTINCT CONCAT('{"uri": "', STR(?itemUri), '", "name": "', ?itemName, '"}'); SEPARATOR=", "), '') AS ?itemList)
+                        WHERE {
+                            ?groupUri (kg_1b:hasField|kg_1b:hasBusinessElement) ?itemUri .
+                            ?itemUri rdfs:label ?itemName .
+                        }
+                        GROUP BY ?groupUri
+                    }
                 }
                 FILTER(?systemType!=kg_1b:DataSystem)
-                FILTER(REGEX(LCASE(?system0Name), ?searchTerm) || REGEX(LCASE(?group0Name), ?searchTerm) || REGEX(LCASE(?item0Name), ?searchTerm))
+                FILTER(REGEX(LCASE(?sys0Name), ?searchTerm) || REGEX(LCASE(?grp0Name), ?searchTerm) || REGEX(LCASE(?itm0Name), ?searchTerm))
                 BIND('${strProtector(searchTerm)}' AS ?searchTerm)
             }
+            GROUP BY ?system ?systemName ?systemType
           `),
           {
             auth: {
@@ -89,6 +117,7 @@ const useFetchData = (searchTerm) => {
               systemUri: res.system.value,
               systemName: res.systemName.value,
               systemType: res.systemType.value,
+              groupList: JSON.parse(res.groupList.value),
               sourceType: '',
               hasOutgoingEdges: true,
               hasReportEdges: true

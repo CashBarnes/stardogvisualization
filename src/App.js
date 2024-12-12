@@ -65,7 +65,7 @@ const App = () => {
       {/*{showDashboardCharts && <DashboardCharts data={data} />}*/}
 
       {/* Conditionally render the Dashboard based on showDashboard */}
-      {showDashboard && <Dashboard data={data} searchTerm={searchTerm} onReset={handleReset} />}
+      {showDashboard && <Dashboard data={data} searchTerm={searchTerm} onReset={handleReset} setSearchTerm={setSearchTerm} />}
     </div>
   );
 };
