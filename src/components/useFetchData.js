@@ -4,7 +4,7 @@ import axios from 'axios';
 import { STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
 import {STARDOG_URL} from "../endpoints";
 
-const useFetchData = (searchTerm) => {
+const useFetchData = (searchTerm, searchUri) => {
   const [nodeData, setNodeData] = useState([]);
   const [edgeData, setEdgeData] = useState([]);
   const [error, setError] = useState(null);
@@ -32,69 +32,62 @@ const useFetchData = (searchTerm) => {
 
   const strProtector = (s) => (s?.replace(/(["'\\])/g, '\\$1') ?? '');
 
+  const queryStr = `SELECT DISTINCT ?system ?systemName ?systemType 
+    (CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT(
+        '{ "uri": "',STR(?groupUri),'", "name" : "', ?groupName, '", "items": [',?itemList,'] }'
+    ); SEPARATOR=", "),']') AS ?groupList)
+FROM <kg_1b:>
+WHERE {
+    {
+        SELECT DISTINCT ?system ?systemName ?systemType ?groupUri ?groupName 
+            (COALESCE(GROUP_CONCAT(DISTINCT CONCAT('{"uri": "', STR(?item), '", "name": "', ?itemName, '"}'); SEPARATOR=", "), '') AS ?itemList)
+        WHERE {
+            ?system a ?systemType ; rdfs:label ?systemName ; (kg_1b:hasSection|kg_1b:hasTable) ?groupUri .
+            ?groupUri rdfs:label ?groupName ; (kg_1b:hasBusinessElement|kg_1b:hasField) ?item .
+            ?item rdfs:label ?itemName .
+            FILTER(?systemType!=kg_1b:DataSystem)
+            ${searchUri?.trim() === '' ?
+      `FILTER(REGEX(LCASE(?systemName), ?searchTerm) || REGEX(LCASE(?groupName), ?searchTerm) || REGEX(LCASE(?itemName), ?searchTerm))
+                    BIND('${strProtector(searchTerm)}' AS ?searchTerm)`
+      : `FILTER(?system=${searchUri} || ?groupUri=${searchUri} || ?item=${searchUri})`}
+        }
+        GROUP BY ?system ?systemName ?systemType ?groupUri ?groupName
+    } UNION {
+        SELECT DISTINCT ?system ?systemName ?systemType ?groupUri ?groupName 
+            (COALESCE(GROUP_CONCAT(DISTINCT CONCAT('{"uri": "', STR(?item), '", "name": "', ?itemName, '"}'); SEPARATOR=", "), '') AS ?itemList)
+        WHERE {
+            ?sys0 rdfs:label ?sys0Name ; (kg_1b:hasSection|kg_1b:hasTable) ?grp0 .
+            ?grp0 rdfs:label ?grp0Name ; (kg_1b:hasBusinessElement|kg_1b:hasField) ?itm0 .
+            ?itm0 rdfs:label ?itm0Name .
+            FILTER(?systemType!=kg_1b:DataSystem)
+            ${searchUri?.trim() === '' ?
+      `FILTER(REGEX(LCASE(?sys0Name), ?searchTerm) || REGEX(LCASE(?grp0Name), ?searchTerm) || REGEX(LCASE(?itm0Name), ?searchTerm))
+              FILTER(!REGEX(LCASE(?systemName), ?searchTerm) && !REGEX(LCASE(?groupName), ?searchTerm) && !REGEX(LCASE(?itemName), ?searchTerm))
+                    BIND('${strProtector(searchTerm)}' AS ?searchTerm)`
+      : `FILTER(?sys0=${searchUri} || ?grp0=${searchUri} || ?itm0=${searchUri})`}
+            ?system (kg_1b:hasSection|kg_1b:hasTable) ?groupUri ; a ?systemType ; rdfs:label ?systemName .
+            ?groupUri rdfs:label ?groupName ; (kg_1b:hasField|kg_1b:hasBusinessElement) ?item .
+            ?item rdfs:label ?itemName .
+            {
+                ?item (kg_1b:derivedItemLevelFrom|kg_1b:computedItemLevelFrom)+ ?itm0 .
+            } UNION {
+                ?itm0 (kg_1b:derivedItemLevelFrom|kg_1b:computedItemLevelFrom)+ ?item .
+            }
+        }
+        GROUP BY ?system ?systemName ?systemType ?groupUri ?groupName
+    }
+        FILTER EXISTS { ?system a ?systemType . }
+}
+GROUP BY ?system ?systemName ?systemType
+  `;
+
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.post(
           STARDOG_URL,
-          'query=' + encodeURIComponent(`
-          SELECT DISTINCT 
-            ?system ?systemName ?systemType 
-            (CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT(
-                '{ "uri": "',STR(?groupUri),'", "name" : "', ?groupName, '", "items": ['
-                ,?itemList
-                ,'] }'
-            ); SEPARATOR=", "),']') AS ?groupList)
-            FROM <kg_1b:>
-            WHERE {
-                ?sys0 (kg_1b:hasSection|kg_1b:hasTable) ?grp0 ; rdfs:label ?sys0Name .
-                ?grp0 (kg_1b:hasBusinessElement|kg_1b:hasField) ?itm0 ; rdfs:label ?grp0Name .
-                ?itm0 rdfs:label ?itm0Name .
-                { 
-                    ?sys0 a ?systemType ; 
-                        rdfs:label ?systemName ;
-                        (kg_1b:hasSection|kg_1b:hasTable) ?grp0 .
-                    ?grp0 rdfs:label ?groupName ; (kg_1b:hasBusinessElement|kg_1b:hasField) ?itm0 .
-                    BIND(?itm0 AS ?item)
-                    BIND(?sys0 AS ?system)
-                    BIND(?grp0 AS ?groupUri)
-                    
-                    {
-                        SELECT DISTINCT ?groupUri
-                        (COALESCE(GROUP_CONCAT(DISTINCT CONCAT('{"uri": "', STR(?item), '", "name": "', ?itemName, '"}'); SEPARATOR=", "), '') AS ?itemList)
-                        WHERE {
-                            ?groupUri (kg_1b:hasBusinessElement|kg_1b:hasField) ?item .
-                            ?item rdfs:label ?itemName .
-                        }
-                        GROUP BY ?groupUri
-                    }
-                }
-                UNION 
-                {
-                    ?system (kg_1b:hasSection|kg_1b:hasTable) ?groupUri ; a ?systemType ; rdfs:label ?systemName .
-                    ?groupUri rdfs:label ?groupName ; (kg_1b:hasField|kg_1b:hasBusinessElement) ?itemUri .
-                    {
-                        ?itemUri (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?itm0 .
-                    } UNION {
-                        ?itm0 (kg_1b:derivedFrom|kg_1b:computedFrom)+ ?itemUri .
-                    }
-                    BIND(?itm0 AS ?itm1)
-                    {
-                        SELECT DISTINCT ?groupUri 
-                        (COALESCE(GROUP_CONCAT(DISTINCT CONCAT('{"uri": "', STR(?itemUri), '", "name": "', ?itemName, '"}'); SEPARATOR=", "), '') AS ?itemList)
-                        WHERE {
-                            ?groupUri (kg_1b:hasField|kg_1b:hasBusinessElement) ?itemUri .
-                            ?itemUri rdfs:label ?itemName .
-                        }
-                        GROUP BY ?groupUri
-                    }
-                }
-                FILTER(?systemType!=kg_1b:DataSystem)
-                FILTER(REGEX(LCASE(?sys0Name), ?searchTerm) || REGEX(LCASE(?grp0Name), ?searchTerm) || REGEX(LCASE(?itm0Name), ?searchTerm))
-                BIND('${strProtector(searchTerm)}' AS ?searchTerm)
-            }
-            GROUP BY ?system ?systemName ?systemType
-          `),
+          'query=' + encodeURIComponent(queryStr),
           {
             auth: {
               username: STARDOG_USERNAME,
@@ -109,7 +102,7 @@ const useFetchData = (searchTerm) => {
 
         if (response.data.results && response.data.results.bindings) {
           const resultBindings = response.data.results.bindings??[];
-          nodesArr = resultBindings.map((res, idx) => ({
+          nodesArr = resultBindings.filter(res => ((res.system?.value ?? '') !== '')).map((res, idx) => ({
             id: res.system.value, type: 'system',
             systemType: res.systemType.value,
             data: {
@@ -126,7 +119,7 @@ const useFetchData = (searchTerm) => {
             derivationIndex: 0
           }));
           setNodeData(nodesArr);
-          // console.log(nodesArr);
+          console.log("LOOK HERE FOR NODESARR: ", nodesArr);
         } else {
           nodesArr = [];
           setNodeData([]); // No data found
@@ -170,7 +163,7 @@ const useFetchData = (searchTerm) => {
           const resultBindings = response.data.results.bindings??[];
           edgesArr = resultBindings.map(res => ({id: res.edge.value + res.origin.value + res.destination.value, source: res.origin.value, target: res.destination.value}));
           setEdgeData(edgesArr);
-          // console.log(edgesArr);
+          console.log("LOOK HERE FOR EDGESARR: ", edgesArr);
 
           // Update nodesArr to set sourceType based on connected node's systemType
           edgesArr.forEach(edge => {
@@ -376,7 +369,7 @@ const useFetchData = (searchTerm) => {
     };
 
     fetchData();
-  }, [searchTerm]);
+  }, [searchTerm, searchUri]);
 
   return { nodeData, setNodeData, edgeData, setEdgeData, error };
 };

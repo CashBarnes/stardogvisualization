@@ -9,6 +9,7 @@ const App = () => {
   const [showDashboardCharts, setShowDashboardCharts] = useState(false); // State to control DashboardCharts visibility
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchUri, setSearchUri] = useState('');
   const { data, storedData, setData, error } = useFetchData();
 
   // Function to filter stored data based on query input
@@ -46,13 +47,14 @@ const App = () => {
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               setSearchTerm(searchInput);
+              setSearchUri('');
             }
           }}
           placeholder="Search Report"
           style={{ flex: 1 }}
         />
 
-        <button style={{ marginLeft: '10px' }} onClick={() => setSearchTerm(searchInput)}>
+        <button style={{ marginLeft: '10px' }} onClick={() => { setSearchTerm(searchInput); setSearchUri('') }}>
           Search
         </button>
 
@@ -65,7 +67,8 @@ const App = () => {
       {/*{showDashboardCharts && <DashboardCharts data={data} />}*/}
 
       {/* Conditionally render the Dashboard based on showDashboard */}
-      {showDashboard && <Dashboard data={data} searchTerm={searchTerm} onReset={handleReset} setSearchTerm={setSearchTerm} />}
+      {showDashboard && <Dashboard data={data} searchTerm={searchTerm} onReset={handleReset} setSearchTerm={setSearchTerm}
+      searchUri={searchUri} setSearchUri={setSearchUri} />}
     </div>
   );
 };

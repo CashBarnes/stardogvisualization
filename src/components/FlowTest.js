@@ -1,5 +1,5 @@
 import ReactFlow, { applyNodeChanges, MiniMap, Controls } from 'react-flow-renderer';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import useFetchData from './useFetchData';
 import SystemNode from './SystemNode';
 
@@ -12,21 +12,24 @@ const defaultEdgeOptions = {
   style: { stroke: '#4f46e5' }
 };
 
-function Dashboard({ searchTerm, onReset, setSearchTerm }) {
-  const { nodeData, setNodeData, edgeData } = useFetchData(searchTerm);
+function Dashboard({ searchTerm, onReset, setSearchTerm, searchUri, setSearchUri }) {
+  const { nodeData, setNodeData, edgeData } = useFetchData(searchTerm, searchUri);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const onNodesChange = useCallback(
     (changes) => setNodeData((nds) => applyNodeChanges(changes, nds)),
     [setNodeData]
   );
 
-  const handleSearch = (term) => {
-    const lowerCaseTerm = term.toLowerCase();
-    setSearchTerm(lowerCaseTerm);
+  const handleSearch = (uri) => {
+    // const lowerCaseTerm = term.toLowerCase();
+    // setSearchTerm(lowerCaseTerm);
+    setSearchUri(uri);
+    setSearchTerm('');
   };
 
   const handleReset = () => {
-    setSearchTerm('');
+    setSearchTerm(''); setSearchUri(''); setExpandedGroups(new Set());
     onReset();
   };
 
@@ -37,7 +40,7 @@ function Dashboard({ searchTerm, onReset, setSearchTerm }) {
       </div>
       <div className='relation-section' style={{ width: '100%', height: '600px', border: '1px solid #e5e7eb' }}>
         <ReactFlow
-          nodes={nodeData.map(node => ({ ...node, data: { ...node.data, sourceType: node.data.sourceType, onSearch: handleSearch, onReset } }))}
+          nodes={nodeData.map(node => ({ ...node, data: { ...node.data, sourceType: node.data.sourceType, onSearch: handleSearch, onReset, expandedGroups, setExpandedGroups } }))}
           edges={edgeData}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={defaultEdgeOptions}

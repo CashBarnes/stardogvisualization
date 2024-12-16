@@ -85,9 +85,9 @@ const styles = {
 };
 
 const SystemNode = memo(function SystemNode({ data }) {
-  const { onSearch, onReset, groupList } = data;
+  const { onSearch, onReset, groupList, expandedGroups, setExpandedGroups } = data;
   const [systemDetails, setSystemDetails] = useState([]);
-  const [expandedGroups, setExpandedGroups] = useState(new Set());
+  // const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
   const [refresh, setRefresh] = useState(false);
 
@@ -214,7 +214,7 @@ const SystemNode = memo(function SystemNode({ data }) {
                       onClick={() => {
                         console.log("Item clicked: ", item.name);
                         onReset();
-                        onSearch(item.name);
+                        onSearch(item.uri);
                         setRefresh(prev => !prev);
                         setExpandedGroups(new Set(expandedGroups));
                         console.log("Refresh state toggled: ", !refresh);
