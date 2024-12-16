@@ -89,6 +89,7 @@ const SystemNode = memo(function SystemNode({ data }) {
   const [systemDetails, setSystemDetails] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   const sourceSystemType = "sourcesystem";
   const derivedSystemType = "derivedsystem";
@@ -117,7 +118,7 @@ const SystemNode = memo(function SystemNode({ data }) {
     return () => {
       isMounted = false;
     };
-  }, [data]);
+  }, [data, refresh]);
 
   const toggleGroup = useCallback((groupName) => {
     setExpandedGroups(prev => {
@@ -211,8 +212,12 @@ const SystemNode = memo(function SystemNode({ data }) {
                       key={`${item.name}-${itemIdx}`}
                       style={styles.item}
                       onClick={() => {
+                        console.log("Item clicked: ", item.name);
                         onReset();
                         onSearch(item.name);
+                        setRefresh(prev => !prev);
+                        setExpandedGroups(new Set(expandedGroups));
+                        console.log("Refresh state toggled: ", !refresh);
                       }}
                     >
                       {item.name}
