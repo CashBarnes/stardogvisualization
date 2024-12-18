@@ -371,7 +371,7 @@ GROUP BY ?system ?systemName ?systemType
     fetchData();
   }, [searchTerm, searchUri]);
 
-  return { nodeData, setNodeData, edgeData, setEdgeData, error };
+  return { nodeData, edgeData, error };
 };
 
 export default useFetchData;

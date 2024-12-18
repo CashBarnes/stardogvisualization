@@ -201,7 +201,7 @@ INSERT DATA {
           sparqlInsert += `  }
 }`;
 
-          console.log(sparqlInsert);
+          // console.log(sparqlInsert);
 
           postAdditionalData(sparqlInsert);
         }

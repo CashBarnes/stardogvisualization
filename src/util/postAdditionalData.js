@@ -5,7 +5,7 @@ import {STARDOG_UPDATE} from "../endpoints";
 export async function postAdditionalData(queryStr) {
   try {
 
-    console.log(`src/util/postAdditionalData.js`, `| queryStr:`, queryStr);
+    // console.log(`src/util/postAdditionalData.js`, `| queryStr:`, queryStr);
 
     await axios.post(
       STARDOG_UPDATE,

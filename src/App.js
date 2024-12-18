@@ -10,17 +10,17 @@ const App = () => {
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchUri, setSearchUri] = useState('');
-  const { data, storedData, setData, error } = useFetchData();
+  // const { data, storedData, setData, error } = useFetchData();
 
   // Function to filter stored data based on query input
-  const queryData = (input) => {
-    return storedData.filter(
-      (item) =>
-        item.s.value.includes(input) ||
-        item.p.value.includes(input) ||
-        item.o.value.includes(input)
-    );
-  };
+  // const queryData = (input) => {
+  //   return storedData.filter(
+  //     (item) =>
+  //       item.s.value.includes(input) ||
+  //       item.p.value.includes(input) ||
+  //       item.o.value.includes(input)
+  //   );
+  // };
 
   // Handle search change
   const handleSearchChange = (e) => {
@@ -37,7 +37,7 @@ const App = () => {
   return (
     <div>
       <h1>Stardog Query Results</h1>
-      {error && <p>Connection failed: {error}</p>}
+      {/* {error && <p>Connection failed: {error}</p>} */}
 
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
         <input
@@ -67,8 +67,8 @@ const App = () => {
       {/*{showDashboardCharts && <DashboardCharts data={data} />}*/}
 
       {/* Conditionally render the Dashboard based on showDashboard */}
-      {showDashboard && <Dashboard data={data} searchTerm={searchTerm} onReset={handleReset} setSearchTerm={setSearchTerm}
-      searchUri={searchUri} setSearchUri={setSearchUri} />}
+      <Dashboard searchTerm={searchTerm} onReset={handleReset} setSearchTerm={setSearchTerm}
+      searchUri={searchUri} setSearchUri={setSearchUri} />
     </div>
   );
 };
