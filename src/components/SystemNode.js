@@ -81,6 +81,12 @@ const styles = {
     height: '8px',
     backgroundColor: '#8fce00',
     border: 'none',
+  },
+  emptyHandle: {
+    width: '8px',
+    height: '8px',
+    backgroundColor: 'transparent',
+    border: 'none',
   }
 };
 
@@ -141,43 +147,32 @@ const SystemNode = memo(function SystemNode({ data }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-
-      {
-        (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(derivedSystemType) || data.sourceType === 'both'))
-        &&
-        (
-          <Handle
-            type="target"
-            id="top"
-            position={Position.Top}
-            style={styles.redHandle}
-          />
-        )
+    <Handle
+      type="target"
+      id="top"
+      position={Position.Top}
+      style={(data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(derivedSystemType) || data.sourceType === 'both')) ? styles.redHandle : styles.emptyHandle}
+    />
+    <Handle
+      type="target"
+      id="left"
+      position={Position.Left}
+      style={(data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both')) ? styles.redHandle : styles.emptyHandle}
+    />
+    <Handle
+      type="target"
+      id = 'left'
+      position={Position.Left}
+      style={(!data.systemType.toLowerCase().endsWith(derivedSystemType) && data.systemType.toLowerCase().endsWith(reportType)) ? styles.handle : styles.emptyHandle}
+    />
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="a"
+      style={
+        (data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges) ? {...styles.handle} : {...styles.emptyHandle}
       }
-            {
-        (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both'))
-        &&
-        (
-          <Handle
-            type="target"
-            id="left"
-            position={Position.Left}
-            style={styles.redHandle}
-          />
-        )
-      }
-      {
-        (!data.systemType.toLowerCase().endsWith(derivedSystemType) && data.systemType.toLowerCase().endsWith(reportType))
-        &&
-        (
-          <Handle
-            type="target"
-            id = 'left'
-            position={Position.Left}
-            style={styles.handle}
-          />
-        )
-      }
+    />
 
       <div style={styles.header}>
         {data.systemName}
@@ -230,21 +225,21 @@ const SystemNode = memo(function SystemNode({ data }) {
         </div>
       )}
 
-    {
-      data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges
-      &&
-    (
-    <Handle
-      type="source"
-      position={Position.Right}
-      id="a"
-      style={{
-        ...styles.handle,
-        top: '30%',
-      }}
-    />
-    )
-    }
+    {/*{*/}
+    {/*  data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges*/}
+    {/*  &&*/}
+    {/*(*/}
+    {/*<Handle*/}
+    {/*  type="source"*/}
+    {/*  position={Position.Right}*/}
+    {/*  id="a"*/}
+    {/*  style={{*/}
+    {/*    ...styles.handle,*/}
+    {/*    top: '30%',*/}
+    {/*  }}*/}
+    {/*/>*/}
+    {/*)*/}
+    {/*}*/}
     {
       data.systemType.toLowerCase().endsWith(derivedSystemType) && data.hasReportEdges
       &&
