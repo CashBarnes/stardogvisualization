@@ -170,7 +170,7 @@ const SystemNode = memo(function SystemNode({ data }) {
       position={Position.Right}
       id="a"
       style={
-        (data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges) ? {...styles.handle} : {...styles.emptyHandle}
+        (data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges) ? {...styles.handle, top: '30%'} : {...styles.emptyHandle}
       }
     />
 
