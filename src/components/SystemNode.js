@@ -54,7 +54,9 @@ const styles = {
   item: {
     padding: '4px 8px',
     fontSize: '14px',
-    color: '#4b5563',
+    color: '#1d4ed8',
+    textDecoration: 'underline',
+    cursor: 'pointer',
     borderRadius: '4px',
   },
   itemCount: {
@@ -79,32 +81,50 @@ const styles = {
     height: '8px',
     backgroundColor: '#8fce00',
     border: 'none',
+  },
+  emptyHandle: {
+    width: '8px',
+    height: '8px',
+    backgroundColor: 'transparent',
+    border: 'none',
   }
 };
 
 const SystemNode = memo(function SystemNode({ data }) {
+  const { onSearch, onReset, groupList, expandedGroups, setExpandedGroups } = data;
   const [systemDetails, setSystemDetails] = useState([]);
-  const [expandedGroups, setExpandedGroups] = useState(new Set());
+  // const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [isHovered, setIsHovered] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   const sourceSystemType = "sourcesystem";
   const derivedSystemType = "derivedsystem";
   const reportType = "report";
 
   useEffect(() => {
-    fetchData();
-  }, [data]);
+    let isMounted = true;
 
-  const fetchData = useCallback(async () => {
-    try {
-      const results = await fetchSystemDetails(data?.systemUri ?? '');
-      setSystemDetails(results ?? []);
-      console.log("system node outgoing edges: ", data.hasOutgoingEdges)
-    } catch (error) {
-      console.error('Error fetching system details:', error);
-      setSystemDetails([]);
-    }
-  }, [data?.systemUri]);
+    const fetchData = async () => {
+      try {
+        const results = await fetchSystemDetails(data?.systemUri ?? '');
+        if (isMounted) {
+          setSystemDetails(groupList);
+          console.log("system node outgoing edges: ", data.hasOutgoingEdges);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error fetching system details:', error);
+          setSystemDetails([]);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [data, refresh]);
 
   const toggleGroup = useCallback((groupName) => {
     setExpandedGroups(prev => {
@@ -127,43 +147,32 @@ const SystemNode = memo(function SystemNode({ data }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-
-      {
-        (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(derivedSystemType) || data.sourceType === 'both'))
-        &&
-        (
-          <Handle
-            type="target"
-            id="top"
-            position={Position.Top}
-            style={styles.redHandle}
-          />
-        )
+    <Handle
+      type="target"
+      id="top"
+      position={Position.Top}
+      style={(data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(derivedSystemType) || data.sourceType === 'both')) ? styles.redHandle : styles.emptyHandle}
+    />
+    <Handle
+      type="target"
+      id="left"
+      position={Position.Left}
+      style={(data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both')) ? styles.redHandle : styles.emptyHandle}
+    />
+    <Handle
+      type="target"
+      id = 'left'
+      position={Position.Left}
+      style={(!data.systemType.toLowerCase().endsWith(derivedSystemType) && data.systemType.toLowerCase().endsWith(reportType)) ? styles.handle : styles.emptyHandle}
+    />
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="a"
+      style={
+        (data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges) ? {...styles.handle, top: '30%'} : {...styles.emptyHandle}
       }
-            {
-        (data.systemType.toLowerCase().endsWith(derivedSystemType) && (data.sourceType.toLowerCase().endsWith(sourceSystemType) || data.sourceType === 'both'))
-        &&
-        (
-          <Handle
-            type="target"
-            id="left"
-            position={Position.Left}
-            style={styles.redHandle}
-          />
-        )
-      }
-      {
-        (!data.systemType.toLowerCase().endsWith(derivedSystemType) && data.systemType.toLowerCase().endsWith(reportType))
-        &&
-        (
-          <Handle
-            type="target"
-            id = 'left'
-            position={Position.Left}
-            style={styles.handle}
-          />
-        )
-      }
+    />
 
       <div style={styles.header}>
         {data.systemName}
@@ -197,6 +206,14 @@ const SystemNode = memo(function SystemNode({ data }) {
                     <div
                       key={`${item.name}-${itemIdx}`}
                       style={styles.item}
+                      onClick={() => {
+                        console.log("Item clicked: ", item.name);
+                        onReset();
+                        onSearch(item.uri);
+                        setRefresh(prev => !prev);
+                        setExpandedGroups(new Set(expandedGroups));
+                        console.log("Refresh state toggled: ", !refresh);
+                      }}
                     >
                       {item.name}
                     </div>
@@ -208,21 +225,21 @@ const SystemNode = memo(function SystemNode({ data }) {
         </div>
       )}
 
-    {
-      data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges
-      &&
-    (
-    <Handle
-      type="source"
-      position={Position.Right}
-      id="a"
-      style={{
-        ...styles.handle,
-        top: '30%',
-      }}
-    />
-    )
-    }
+    {/*{*/}
+    {/*  data.systemType.toLowerCase().endsWith(sourceSystemType) && data.hasReportEdges*/}
+    {/*  &&*/}
+    {/*(*/}
+    {/*<Handle*/}
+    {/*  type="source"*/}
+    {/*  position={Position.Right}*/}
+    {/*  id="a"*/}
+    {/*  style={{*/}
+    {/*    ...styles.handle,*/}
+    {/*    top: '30%',*/}
+    {/*  }}*/}
+    {/*/>*/}
+    {/*)*/}
+    {/*}*/}
     {
       data.systemType.toLowerCase().endsWith(derivedSystemType) && data.hasReportEdges
       &&
