@@ -187,9 +187,9 @@ INSERT DATA {
 
                   system.tables.forEach(table => {
                     sparqlInsert += `    kg_1b:${be.beId} kg_1b:computedFrom kg_1b:${table.tableName} .\n`;
-
                     table.fields.forEach(field => {
-                      sparqlInsert += `    kg_1b:${be.beId} kg_1b:computedFrom kg_1b:${field} .\n`;
+                      sparqlInsert += `    kg_1b:${be.beId} kg_1b:computedFrom kg_1b:${field} ;
+                      kg_1b:computedItemLevelFrom kg_1b:${field} .\n`;
                     });
                   });
                 });
