@@ -36,7 +36,7 @@ const App = () => {
 
   return (
     <div>
-      <h1>Stardog Query Results</h1>
+      <h1>End-to-End Lineage Graph</h1>
       {/*{error && <p>Connection failed: {error}</p>}*/}
 
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
