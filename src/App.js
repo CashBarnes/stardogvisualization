@@ -12,6 +12,7 @@ const App = () => {
   const [searchUri, setSearchUri] = useState('');
 
   const { nodeData, edgeData } = useFetchData(searchTerm, searchUri);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   // Placeholder data for DashboardCharts
   // const data = {
@@ -26,11 +27,14 @@ const App = () => {
     setSearchInput(input);
   };
 
-  const handleReset = () => {
+  const onReset = () => {
   setSearchInput('');
   setSearchTerm('');
-};
-
+  };
+  const handleReset = () => {
+    setSearchTerm(''); setSearchUri(''); setExpandedGroups(new Set());
+    onReset();
+  };
 
   return (
     <div>
@@ -68,14 +72,17 @@ const App = () => {
         <button onClick={() => setShowDashboard(prev => !prev)} style={{ marginLeft: '10px' }}>
           {showDashboard ? 'Hide' : 'Show'} Lineage Flow
         </button>
+        <button onClick={ handleReset} style={{ marginLeft: '10px' }}> Reset </button>
       </div>
 
       {/*/!* Conditionally render the DashboardCharts above the original dashboard *!/*/}
       {showDashboardCharts && <DashboardCharts edgeData={edgeData} />}
 
       {/* Conditionally render the Dashboard based on showDashboard */}
-      {showDashboard && <Dashboard searchTerm={searchTerm} onReset={handleReset} setSearchTerm={setSearchTerm}
-      searchUri={searchUri} setSearchUri={setSearchUri} nodeData={nodeData} edgeData={edgeData} />}
+      {showDashboard && <Dashboard onReset={onReset} setSearchTerm={setSearchTerm} setSearchUri={setSearchUri}
+
+      nodeData={nodeData} edgeData={edgeData} expandedGroups={expandedGroups} setExpandedGroups={setExpandedGroups} />}
+
     </div>
   );
 };

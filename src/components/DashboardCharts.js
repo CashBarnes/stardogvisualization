@@ -13,9 +13,6 @@ const DashboardCharts = ({ edgeData }) => {
   const monthlyCount = edgeData.filter(edge => edge.frequency === 'Monthly').length;
   const quarterlyCount = edgeData.filter(edge => edge.frequency === 'Quarterly').length;
 
-
-  useEffect(() => { console.log("look here: ", edgeData) }, [edgeData]);
-
   const pushPullData = {
     labels: ['Push', 'Pull'],
     datasets: [
