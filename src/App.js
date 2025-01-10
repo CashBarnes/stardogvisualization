@@ -6,20 +6,19 @@ import { handleAddData } from './util/funcs';
 
 const App = () => {
   const [showDashboard, setShowDashboard] = useState(true); // State to control dashboard visibility
-  const [showDashboardCharts, setShowDashboardCharts] = useState(false); // State to control DashboardCharts visibility
+  const [showDashboardCharts, setShowDashboardCharts] = useState(true); // State to control DashboardCharts visibility
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchUri, setSearchUri] = useState('');
-  // const { data, storedData, setData, error } = useFetchData();
 
-  // Function to filter stored data based on query input
-  // const queryData = (input) => {
-  //   return storedData.filter(
-  //     (item) =>
-  //       item.s.value.includes(input) ||
-  //       item.p.value.includes(input) ||
-  //       item.o.value.includes(input)
-  //   );
+  const { nodeData, edgeData } = useFetchData(searchTerm, searchUri);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+
+  // Placeholder data for DashboardCharts
+  // const data = {
+  //   pushPull: [50, 50],
+  //   autoManual: [50, 50],
+  //   frequency: [33, 33, 34]
   // };
 
   // Handle search change
@@ -28,11 +27,14 @@ const App = () => {
     setSearchInput(input);
   };
 
-  const handleReset = () => {
+  const onReset = () => {
   setSearchInput('');
   setSearchTerm('');
-};
-
+  };
+  const handleReset = () => {
+    setSearchTerm(''); setSearchUri(''); setExpandedGroups(new Set());
+    onReset();
+  };
 
   return (
     <div>
@@ -63,12 +65,24 @@ const App = () => {
         </button>
       </div>
 
+      <div style={{ marginBottom: '10px' }}>
+        <button onClick={() => setShowDashboardCharts(prev => !prev)}>
+          {showDashboardCharts ? 'Hide' : 'Show'} Push/Pull Charts
+        </button>
+        <button onClick={() => setShowDashboard(prev => !prev)} style={{ marginLeft: '10px' }}>
+          {showDashboard ? 'Hide' : 'Show'} Lineage Flow
+        </button>
+        <button onClick={ handleReset} style={{ marginLeft: '10px' }}> Reset </button>
+      </div>
+
       {/*/!* Conditionally render the DashboardCharts above the original dashboard *!/*/}
-      {/*{showDashboardCharts && <DashboardCharts data={data} />}*/}
+      {showDashboardCharts && <DashboardCharts edgeData={edgeData} />}
 
       {/* Conditionally render the Dashboard based on showDashboard */}
-      {showDashboard && <Dashboard searchTerm={searchTerm} onReset={handleReset} setSearchTerm={setSearchTerm}
-      searchUri={searchUri} setSearchUri={setSearchUri} />}
+      {showDashboard && <Dashboard onReset={onReset} setSearchTerm={setSearchTerm} setSearchUri={setSearchUri}
+
+      nodeData={nodeData} edgeData={edgeData} expandedGroups={expandedGroups} setExpandedGroups={setExpandedGroups} />}
+
     </div>
   );
 };

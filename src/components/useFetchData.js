@@ -133,7 +133,7 @@ GROUP BY ?system ?systemName ?systemType
         const response = await axios.post(
           STARDOG_URL,
           'query=' + encodeURIComponent(`
-          SELECT DISTINCT ?origin ?edge ?destination
+          SELECT DISTINCT ?origin ?edge ?destination ?auto_manual ?push_pull ?frequency
           FROM <kg_1b:>
           {
               ?destination ?edge ?origin .
@@ -143,6 +143,9 @@ GROUP BY ?system ?systemName ?systemType
               } UNION {
                   ?destination a kg_1b:Report .
               }
+              OPTIONAL { << ?destination ?edge ?origin >> kg_1b:auto_manual ?auto_manual . }
+              OPTIONAL { << ?destination ?edge ?origin >> kg_1b:push_pull ?push_pull . }
+              OPTIONAL { << ?destination ?edge ?origin >> kg_1b:frequency ?frequency . }
               FILTER(?edge IN (kg_1b:derivedFrom, kg_1b:computedFrom))
               FILTER(?origin IN (${nodeUrisStr}) && ?destination IN (${nodeUrisStr}))
           }
@@ -161,7 +164,13 @@ GROUP BY ?system ?systemName ?systemType
 
         if (response.data.results && response.data.results.bindings) {
           const resultBindings = response.data.results.bindings??[];
-          edgesArr = resultBindings.map(res => ({id: res.edge.value + res.origin.value + res.destination.value, source: res.origin.value, target: res.destination.value}));
+          edgesArr = resultBindings.map(res => ({
+            id: res.edge.value + res.origin.value + res.destination.value,
+            source: res.origin.value, target: res.destination.value,
+            auto_manual: res.auto_manual?.value ?? 'Unknown',
+            push_pull: res.push_pull?.value ?? 'Unknown',
+            frequency: res.frequency?.value ?? 'Unknown',
+          }));
           setEdgeData(edgesArr);
           console.log("LOOK HERE FOR EDGESARR: ", edgesArr);
 
