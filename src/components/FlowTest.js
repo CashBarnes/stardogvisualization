@@ -12,8 +12,8 @@ const defaultEdgeOptions = {
   style: { stroke: '#4f46e5' }
 };
 
-function Dashboard({ searchTerm, onReset, setSearchTerm, searchUri, setSearchUri }) {
-  const { nodeData, edgeData } = useFetchData(searchTerm, searchUri);
+function Dashboard({ searchTerm, onReset, setSearchTerm, searchUri, setSearchUri, nodeData, edgeData }) {
+  // const { nodeData, edgeData } = useFetchData(searchTerm, searchUri);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [nodes, setNodes] = useState([]);
 
