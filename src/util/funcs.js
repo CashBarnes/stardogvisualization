@@ -28,7 +28,10 @@ export const handleAddData = async () => {
               reportBusinessElement,
               systemId,
               systemTable,
-              systemField
+              systemField,
+              auto_manual,
+              push_pull,
+              frequency
             } = item;
 
             // Find or create the report
@@ -47,6 +50,9 @@ export const handleAddData = async () => {
             if (!report.systems.find(s => s.systemId === systemId)) {
               report.systems.push({
                 systemId,
+                auto_manual,
+                push_pull,
+                frequency,
                 tables: []
               });
             }
@@ -151,7 +157,10 @@ INSERT DATA {
       rdfs:label "${report.reportName}" .\n`;
 
             report.systems.forEach(system => {
-              sparqlInsert += `    kg_1b:${report.reportId} kg_1b:computedFrom kg_1b:${system.systemId} .\n`;
+              sparqlInsert += `    kg_1b:${report.reportId} kg_1b:computedFrom kg_1b:${system.systemId} .\n
+    << kg_1b:${report.reportId} kg_1b:computedFrom kg_1b:${system.systemId} >> kg_1b:auto_manual "${system.auto_manual}" ;
+      kg_1b:frequency "${system.frequency}" ;
+      kg_1b:push_pull "${system.push_pull}" .`;
 
               system.tables.forEach(table => {
                 sparqlInsert += `    kg_1b:${report.reportId} kg_1b:computedFrom kg_1b:${table.tableName} .\n`;
