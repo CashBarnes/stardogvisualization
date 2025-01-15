@@ -1,0 +1,9 @@
+.dashboard-stats-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.stat-card:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out;
+}
