@@ -1,15 +1,16 @@
 import React from 'react';
 import '../styles/DashboardStats.css';
 
-const DashboardStats = () => {
+const DashboardStats = ({ metricData }) => {
   // Dummy data for the cards
   const statsData = [
-    { icon: '📊', label: 'Reports', value: 11, color: '#D9C2F4' },
-    { icon: '📋', label: 'Line Items', value: 874, color: '#FFC078' },
-    { icon: '⚙️', label: 'Functional Areas', value: 3, color: '#A7E0FF' },
-    { icon: '💻', label: 'Applications', value: 100, color: '#C2F4C2' },
-    { icon: '📂', label: 'Data Elements', value: 962, color: '#FFDBA4' },
-    { icon: '📚', label: 'Logical Attributes', value: 901, color: '#FFE1A1' },
+    { icon: '💻', label: 'Systems', value: metricData?.systemCount ?? 0, color: '#C2F4C2' },
+    { icon: '📊', label: 'Reports', value: metricData?.reportCount ?? 0, color: '#D9C2F4' },
+    { icon: '⚙️', label: 'Depth', value: metricData?.depthMax ?? 0, color: '#A7E0FF' },
+
+    { icon: '📂', label: 'Data Elements', value: metricData?.fieldCount ?? 0, color: '#FFDBA4' },
+    { icon: '📋', label: 'Line Items', value: metricData?.businessElementCount ?? 0, color: '#FFC078' },
+    { icon: '📚', label: 'Steps', value: metricData?.stepCount ?? 0, color: '#FFE1A1' },
   ];
 
   return (

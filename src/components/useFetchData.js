@@ -7,6 +7,7 @@ import {STARDOG_URL} from "../endpoints";
 const useFetchData = (searchTerm, searchUri) => {
   const [nodeData, setNodeData] = useState([]);
   const [edgeData, setEdgeData] = useState([]);
+  const [metricData, setMetricData] = useState();
   const [error, setError] = useState(null);
 
   const rowPositionOffset = 150;
@@ -84,6 +85,83 @@ GROUP BY ?system ?systemName ?systemType
 
   useEffect(() => {
     const fetchData = async () => {
+
+            // Retrieve metrics data
+      try {
+        const response = await axios.post(
+          STARDOG_URL,
+          'query=' + encodeURIComponent(`
+          SELECT (COUNT(DISTINCT ?report) AS ?reportCount)
+            (COUNT(DISTINCT ?businessElement) AS ?businessElementCount)
+            (COUNT(DISTINCT ?system) AS ?systemCount)
+            (COUNT(DISTINCT ?field) AS ?fieldCount)
+            (MAX(?depth) AS ?depthMax)
+            (COUNT(?step) AS ?stepCount)
+            (COUNT(?dataMovement) AS ?dataMovementCount)
+          FROM <kg_1b:>
+          WHERE {
+            ?report a kg_1b:Report ; kg_1b:hasSection ?section .
+            ?section kg_1b:hasBusinessElement ?businessElement .
+            ?system a kg_1b:DataSystem ; kg_1b:hasTable ?table .
+            ?table kg_1b:hasField ?field .
+            ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
+            {
+              SELECT ?businessElement ?field (COUNT(?mid) as ?depth)
+              WHERE {
+                ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
+                ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)* ?mid .
+                ?mid a kg_1b:Field ; (kg_1b:computedFrom|kg_1b:derivedFrom)* ?field .
+              }
+              GROUP BY ?businessElement ?field
+            }
+            {
+              SELECT ?businessElement ?field (COUNT(*) as ?dataMovement)
+              WHERE {
+                ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
+              }
+              GROUP BY ?businessElement ?field
+            }
+            {
+              SELECT ?report ?system (COUNT(DISTINCT *) as ?step)
+              WHERE {
+                ?report (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?system .
+              }
+              GROUP BY ?report ?system
+            }
+          }
+          `),
+          {
+            auth: {
+              username: STARDOG_USERNAME,
+              password: STARDOG_PASSWORD
+            },
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Accept': 'application/sparql-results+json'
+            }
+          }
+        );
+        if (response.data.results?.bindings?.[0]) {
+          const res = response.data.results?.bindings?.[0];
+          // console.log("LOOK HERE FOR AFTER bindings for res.dataMovement.value:", res.dataMovement.value);
+          const metricsObj = {
+            reportCount: Number(res.reportCount.value),
+            businessElementCount: Number(res.businessElementCount.value),
+            systemCount: Number(res.systemCount.value),
+            fieldCount: Number(res.fieldCount.value),
+            depthMax: Number(res.depthMax.value),
+            stepCount: Number(res.stepCount.value),
+            dataMovementCount: Number(res.dataMovementCount.value),
+          };
+          setMetricData(metricsObj);
+        } else {
+          metricsObj = [];
+          setMetricData([]); // No data found
+        }
+      } catch (err) {
+        setError(err.message); // Handle connection errors
+      }
+
       try {
         const response = await axios.post(
           STARDOG_URL,
@@ -380,7 +458,7 @@ GROUP BY ?system ?systemName ?systemType
     fetchData();
   }, [searchTerm, searchUri]);
 
-  return { nodeData, setNodeData, edgeData, setEdgeData, error };
+  return { nodeData, setNodeData, edgeData, setEdgeData, metricData, error };
 };
 
 export default useFetchData;

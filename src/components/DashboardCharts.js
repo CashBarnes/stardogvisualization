@@ -1,6 +1,6 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import { Pie } from 'react-chartjs-2';
-
+import '../styles/DashboardCharts.css';
 
 const DashboardCharts = ({ edgeData }) => {
   const pushCount = edgeData.filter(edge => edge.push_pull === 'Push').length;
@@ -47,18 +47,18 @@ const DashboardCharts = ({ edgeData }) => {
   };
 
   return (
-    <div className="dashboard-charts-container" style={{ display: 'flex', justifyContent: 'space-around' }}>
-      <div className="dashboard-chart-card" style={{ width: '30%' }}>
+    <div className="dashboard-charts-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', padding: '20px' }}>
+      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#D9C2F4', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
         <h3>Push/Pull</h3>
         <Pie data={pushPullData} />
       </div>
 
-      <div className="dashboard-chart-card" style={{ width: '30%' }}>
+      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FFC078', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
         <h3>Auto/Manual</h3>
         <Pie data={autoManualData} />
       </div>
 
-      <div className="dashboard-chart-card" style={{ width: '30%' }}>
+      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#A7E0FF', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
         <h3>Frequency</h3>
         <Pie data={frequencyData} />
       </div>

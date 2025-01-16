@@ -13,7 +13,7 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchUri, setSearchUri] = useState('');
 
-  const { nodeData, edgeData } = useFetchData(searchTerm, searchUri);
+  const { nodeData, edgeData, metricData } = useFetchData(searchTerm, searchUri);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   // Handle search change
@@ -77,7 +77,7 @@ const App = () => {
       </div>
 
       {/* Conditionally render the DashboardStats above the DashboardCharts */}
-      {showDashboardStats && <DashboardStats />}
+      {showDashboardStats && <DashboardStats metricData={metricData}/>}
 
       {/* Conditionally render the DashboardCharts above the original dashboard */}
       {showDashboardCharts && <DashboardCharts edgeData={edgeData} />}

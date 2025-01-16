@@ -1,0 +1,39 @@
+.dashboard-charts-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 20px;
+  padding-top: 40px; /* Padding at the top */
+  padding-bottom: 40px; /* Padding at the bottom */
+}
+
+.dashboard-chart-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 10px; /* Padding inside the cards */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: scale(0.75); /* Card size */
+}
+
+/* Media query for medium screens */
+@media (max-width: 1200px) {
+  .dashboard-charts-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dashboard-chart-card {
+    transform: scale(0.85); /* Adjust card size for medium screens */
+  }
+}
+
+/* Media query for small screens */
+@media (max-width: 768px) {
+  .dashboard-charts-container {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-chart-card {
+    transform: scale(0.95); /* Adjust card size for small screens */
+  }
+}
