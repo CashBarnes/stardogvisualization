@@ -96,37 +96,38 @@ GROUP BY ?system ?systemName ?systemType
             (COUNT(DISTINCT ?system) AS ?systemCount)
             (COUNT(DISTINCT ?field) AS ?fieldCount)
             (MAX(?depth) AS ?depthMax)
-            (COUNT(?step) AS ?stepCount)
-            (COUNT(?dataMovement) AS ?dataMovementCount)
+            (COUNT(DISTINCT ?step1) + COUNT(DISTINCT ?step2) AS ?stepCount)
+            (COUNT(DISTINCT ?dataMovement1) AS ?dataMovementCount)
           FROM <kg_1b:>
           WHERE {
-            ?report a kg_1b:Report ; kg_1b:hasSection ?section .
-            ?section kg_1b:hasBusinessElement ?businessElement .
-            ?system a kg_1b:DataSystem ; kg_1b:hasTable ?table .
-            ?table kg_1b:hasField ?field .
-            ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
-            {
-              SELECT ?businessElement ?field (COUNT(?mid) as ?depth)
+            ?report kg_1b:hasSection ?section ; rdfs:label ?reportName .
+            ?section kg_1b:hasBusinessElement ?businessElement ; rdfs:label ?sectiontName .
+            ?businessElement rdfs:label ?businessElementName .
+            ?system kg_1b:hasTable ?table ; rdfs:label ?systemName .
+            ?table kg_1b:hasField ?field ; rdfs:label ?tableName .
+            ?field rdfs:label ?fieldName .
+            OPTIONAL { ?businessElement kg_1b:computedFrom+ ?field . }
+            OPTIONAL {
+              ?report (kg_1b:computedFrom|kg_1b:derivedFrom) ?system .
+              BIND (CONCAT(STR(?report), STR(?system)) AS ?step1)
+            }
+            OPTIONAL { 
+              ?system kg_1b:derivedFrom ?system1 . 
+              ?system1 a kg_1b:DataSystem ; rdfs:label ?system1Name . 
+              BIND (CONCAT(STR(?system), STR(?system1)) AS ?step2)
+            }
+            OPTIONAL { 
+              ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
+              BIND (CONCAT(STR(?businessElement), STR(?field)) AS ?dataMovement1)
+            }
+            OPTIONAL {
+              SELECT ?businessElement ?field (COUNT(DISTINCT ?mid) as ?depth)
               WHERE {
                 ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
                 ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)* ?mid .
                 ?mid a kg_1b:Field ; (kg_1b:computedFrom|kg_1b:derivedFrom)* ?field .
               }
               GROUP BY ?businessElement ?field
-            }
-            {
-              SELECT ?businessElement ?field (COUNT(*) as ?dataMovement)
-              WHERE {
-                ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
-              }
-              GROUP BY ?businessElement ?field
-            }
-            {
-              SELECT ?report ?system (COUNT(DISTINCT *) as ?step)
-              WHERE {
-                ?report (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?system .
-              }
-              GROUP BY ?report ?system
             }
           }
           `),
