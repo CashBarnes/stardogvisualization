@@ -4,7 +4,7 @@ import { fetchSystemDetails } from '../util/fetchSystemDetails';
 
 const styles = {
   node: {
-    backgroundColor: 'white',
+    backgroundColor: '#e4e5e7',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
@@ -142,6 +142,8 @@ const SystemNode = memo(function SystemNode({ data }) {
     <div
       style={{
         ...styles.node,
+        ...(data.systemType.toLowerCase().endsWith(sourceSystemType) ? {border: '20px solid #3283bd'} :
+            (data.systemType.toLowerCase().endsWith(derivedSystemType) ? {border: '20px solid #6bb0d6'} : {border: '20px solid #9dcae1'})),
         ...(isHovered ? styles.nodeHover : {})
       }}
       onMouseEnter={() => setIsHovered(true)}

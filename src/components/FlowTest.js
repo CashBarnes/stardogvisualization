@@ -25,12 +25,12 @@ function Dashboard({ onReset, setSearchTerm, setSearchUri, nodeData, edgeData, e
         setExpandedGroups
     },
     style: {
-        background: getNodeColor(node.data.sourceType),
+        // background: getNodeColor(node.data.sourceType),
         borderRadius: '10px',
-        padding: '20px',
+        padding: '0px',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
       }
-    })));
+    })));'0 4px 6px rgba(0, 0, 0, 0.1)'
   }, [expandedGroups]);
 
   useEffect(() => {
@@ -45,9 +45,9 @@ function Dashboard({ onReset, setSearchTerm, setSearchUri, nodeData, edgeData, e
         setExpandedGroups
       },
       style: {
-        background: getNodeColor(node.data.sourceType),
+        // background: getNodeColor(node.data.sourceType),
         borderRadius: '10px',
-        padding: '20px',
+        padding: '0px',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
       }
     })));
@@ -66,7 +66,7 @@ function Dashboard({ onReset, setSearchTerm, setSearchUri, nodeData, edgeData, e
       console.log('sourceType:', sourceType);
       switch (sourceType) {
         // case 'kg_1b:SourceSystem':
-        //   return '#6bb0d6';
+        //   return '#3283bd';
         // case 'both':
         //   return '#6bb0d6';
         default:
