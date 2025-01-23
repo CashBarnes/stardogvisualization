@@ -36,8 +36,11 @@ const App = () => {
 
   return (
     <div>
-      <h1>End-to-End Lineage Graph</h1>
+      <h1 style={{textAlign: 'center'}}>End-to-End Lineage Graph</h1>
       {/*{error && <p>Connection failed: {error}</p>}*/}
+
+      {/* Conditionally render the DashboardStats above the DashboardCharts */}
+      {showDashboardStats && <DashboardStats metricData={metricData}/>}
 
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
         <input
@@ -76,8 +79,7 @@ const App = () => {
         <button onClick={handleReset} style={{ marginLeft: '10px' }}> Reset </button>
       </div>
 
-      {/* Conditionally render the DashboardStats above the DashboardCharts */}
-      {showDashboardStats && <DashboardStats metricData={metricData}/>}
+
 
       {/* Conditionally render the DashboardCharts above the original dashboard */}
       {showDashboardCharts && <DashboardCharts edgeData={edgeData} />}
