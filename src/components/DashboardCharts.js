@@ -18,8 +18,8 @@ const DashboardCharts = ({ edgeData }) => {
     datasets: [
       {
         data: [pushCount, pullCount],
-        backgroundColor: ['#4BC0C0', '#FF9F40'],
-        hoverBackgroundColor: ['#4BC0C0', '#FF9F40'],
+        backgroundColor: ['#9dcae1', '#3283bd'],
+        hoverBackgroundColor: ['#9dcae1', '#3283bd'],
       },
     ],
   };
@@ -29,8 +29,8 @@ const DashboardCharts = ({ edgeData }) => {
     datasets: [
       {
         data: [autoCount, manualCount],
-        backgroundColor: ['#FF6384', '#36A2EB'],
-        hoverBackgroundColor: ['#FF6384', '#36A2EB'],
+        backgroundColor: ['#9dcae1', '#3283bd'],
+        hoverBackgroundColor: ['#9dcae1', '#3283bd'],
       },
     ],
   };
@@ -40,25 +40,25 @@ const DashboardCharts = ({ edgeData }) => {
     datasets: [
       {
         data: [weeklyCount, monthlyCount, quarterlyCount],
-        backgroundColor: ['#FFCE56', '#36A2EB', '#FF6384'],
-        hoverBackgroundColor: ['#FFCE56', '#36A2EB', '#FF6384'],
+        backgroundColor: ['#9dcae1', '#6bb0d6', '#3283bd'],
+        hoverBackgroundColor: ['#9dcae1', '#6bb0d6', '#3283bd'],
       },
     ],
   };
 
   return (
     <div className="dashboard-charts-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', padding: '20px' }}>
-      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#D9C2F4', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
+      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#e4e5e7', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
         <h3>Push/Pull</h3>
         <Pie data={pushPullData} />
       </div>
 
-      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FFC078', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
+      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#e4e5e7', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
         <h3>Auto/Manual</h3>
         <Pie data={autoManualData} />
       </div>
 
-      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#A7E0FF', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
+      <div className="dashboard-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#e4e5e7', borderRadius: '10px', padding: '20px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
         <h3>Frequency</h3>
         <Pie data={frequencyData} />
       </div>

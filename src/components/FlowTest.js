@@ -15,11 +15,42 @@ function Dashboard({ onReset, setSearchTerm, setSearchUri, nodeData, edgeData, e
   const [nodes, setNodes] = useState([]);
 
   useEffect(() => {
-    setNodes(nodes.map(node => ({ ...node, data: { ...node.data, sourceType: node.data.sourceType, onSearch: handleSearch, onReset, expandedGroups, setExpandedGroups } })));
+    setNodes(nodes.map(node => ({ ...node,
+      data: {
+      ...node.data,
+        sourceType: node.data.sourceType,
+        onSearch: handleSearch,
+        onReset,
+        expandedGroups,
+        setExpandedGroups
+    },
+    style: {
+        background: getNodeColor(node.data.sourceType),
+        borderRadius: '10px',
+        padding: '20px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      }
+    })));
   }, [expandedGroups]);
 
   useEffect(() => {
-    setNodes(nodeData.map(node => ({ ...node, data: { ...node.data, sourceType: node.data.sourceType, onSearch: handleSearch, onReset, expandedGroups, setExpandedGroups } })));
+    setNodes(nodeData.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        sourceType: node.data.sourceType,
+        onSearch: handleSearch,
+        onReset,
+        expandedGroups,
+        setExpandedGroups
+      },
+      style: {
+        background: getNodeColor(node.data.sourceType),
+        borderRadius: '10px',
+        padding: '20px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      }
+    })));
   }, [edgeData]);
 
   const onNodesChange = (changes) => {
@@ -29,6 +60,18 @@ function Dashboard({ onReset, setSearchTerm, setSearchUri, nodeData, edgeData, e
   const handleSearch = (uri) => {
     setSearchUri(uri);
     setSearchTerm('');
+  };
+
+    const getNodeColor = (sourceType) => {
+      console.log('sourceType:', sourceType);
+      switch (sourceType) {
+        // case 'kg_1b:SourceSystem':
+        //   return '#6bb0d6';
+        // case 'both':
+        //   return '#6bb0d6';
+        default:
+          return '#6bb0d6';
+      }
   };
 
   return (

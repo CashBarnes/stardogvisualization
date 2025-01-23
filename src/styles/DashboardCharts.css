@@ -24,7 +24,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
   .dashboard-chart-card {
-    transform: scale(0.85); /* Adjust card size for medium screens */
+    transform: scale(0.85);
   }
 }
 
@@ -34,6 +34,6 @@
     grid-template-columns: 1fr;
   }
   .dashboard-chart-card {
-    transform: scale(0.95); /* Adjust card size for small screens */
+    transform: scale(0.95);
   }
 }
