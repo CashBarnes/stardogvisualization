@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { STARDOG_USERNAME, STARDOG_PASSWORD } from '../config';
-import {STARDOG_URL} from "../endpoints";
+import { STARDOG_URL } from "../endpoints";
 
 const useFetchData = (searchTerm, searchUri) => {
   const [nodeData, setNodeData] = useState([]);
@@ -24,7 +24,7 @@ const useFetchData = (searchTerm, searchUri) => {
 
   const systemsById = new Map(); // Used to quickly look up data on nodes during
 
-  const isReportById = (id) => { if(!systemsById.has(id)) { return false; } return isReport(systemsById.get(id)); };
+  const isReportById = (id) => { if (!systemsById.has(id)) { return false; } return isReport(systemsById.get(id)); };
 
   // const hasOutgoingEdges = (nodeId) => { return edgesArr.some(edge => edge.source === nodeId); };
 
@@ -82,22 +82,14 @@ WHERE {
 GROUP BY ?system ?systemName ?systemType
   `;
 
-
-  useEffect(() => {
-    const fetchData = async () => {
-
-            // Retrieve metrics data
-      try {
-        const response = await axios.post(
-          STARDOG_URL,
-          'query=' + encodeURIComponent(`
+  const metricQuery = `
           SELECT (COUNT(DISTINCT ?report) AS ?reportCount)
             (COUNT(DISTINCT ?businessElement) AS ?businessElementCount)
             (COUNT(DISTINCT ?system) AS ?systemCount)
             (COUNT(DISTINCT ?field) AS ?fieldCount)
-            (MAX(?depth) AS ?depthMax)
-            (COUNT(DISTINCT ?step1) + COUNT(DISTINCT ?step2) AS ?stepCount)
-            (COUNT(DISTINCT ?dataMovement1) AS ?dataMovementCount)
+            # (MAX(?depth) AS ?depthMax)
+            # (COUNT(DISTINCT ?step1) + COUNT(DISTINCT ?step2) AS ?stepCount)
+            # (COUNT(DISTINCT ?dataMovement1) AS ?dataMovementCount)
           FROM <kg_1b:>
           WHERE {
             ?report kg_1b:hasSection ?section ; rdfs:label ?reportName .
@@ -106,31 +98,62 @@ GROUP BY ?system ?systemName ?systemType
             ?system kg_1b:hasTable ?table ; rdfs:label ?systemName .
             ?table kg_1b:hasField ?field ; rdfs:label ?tableName .
             ?field rdfs:label ?fieldName .
-            OPTIONAL { ?businessElement kg_1b:computedFrom+ ?field . }
-            OPTIONAL {
-              ?report (kg_1b:computedFrom|kg_1b:derivedFrom) ?system .
-              BIND (CONCAT(STR(?report), STR(?system)) AS ?step1)
-            }
+            ${(searchTerm.trim() !== '' || searchUri.trim() !== '') ?
+              `?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
             OPTIONAL { 
-              ?system kg_1b:derivedFrom ?system1 . 
-              ?system1 a kg_1b:DataSystem ; rdfs:label ?system1Name . 
-              BIND (CONCAT(STR(?system), STR(?system1)) AS ?step2)
+              ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field1 .
+              { ?field kg_1b:derivedFrom+ ?field1 . } UNION { ?field1 kg_1b:derivedFrom+ ?field . }
+              ?system1 kg_1b:hasTable ?table1 ; rdfs:label ?system1Name .
+              ?table1 kg_1b:hasField ?field1 ; rdfs:label ?table1Name .
+              ?field1 rdfs:label ?field1Name .
+            }`: ``
             }
-            OPTIONAL { 
-              ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
-              BIND (CONCAT(STR(?businessElement), STR(?field)) AS ?dataMovement1)
-            }
-            OPTIONAL {
-              SELECT ?businessElement ?field (COUNT(DISTINCT ?mid) as ?depth)
-              WHERE {
-                ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
-                ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)* ?mid .
-                ?mid a kg_1b:Field ; (kg_1b:computedFrom|kg_1b:derivedFrom)* ?field .
-              }
-              GROUP BY ?businessElement ?field
-            }
+            # OPTIONAL {
+            #   ?report (kg_1b:computedFrom|kg_1b:derivedFrom) ?system .
+            #   BIND (CONCAT(STR(?report), STR(?system)) AS ?step1)
+            # }
+            # OPTIONAL { 
+            #   ?system kg_1b:derivedFrom ?system1 . 
+            #   ?system1 a kg_1b:DataSystem ; rdfs:label ?system1Name . 
+            #   BIND (CONCAT(STR(?system), STR(?system1)) AS ?step2)
+            # }
+            # OPTIONAL { 
+            #   ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
+            #   BIND (CONCAT(STR(?businessElement), STR(?field)) AS ?dataMovement1)
+            # }
+            # OPTIONAL {
+            #   SELECT ?businessElement ?field (COUNT(DISTINCT ?mid) as ?depth)
+            #   WHERE {
+            #     ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)+ ?field .
+            #     ?businessElement (kg_1b:computedFrom|kg_1b:derivedFrom)* ?mid .
+            #     ?mid a kg_1b:Field ; (kg_1b:computedFrom|kg_1b:derivedFrom)* ?field .
+            #   }
+            #   GROUP BY ?businessElement ?field
+            # }
+            ${searchTerm.trim() !== '' ? `BIND('${strProtector(searchTerm)}' AS ?searchTerm)
+            FILTER(REGEX(LCASE(?reportName),?searchTerm) || REGEX(LCASE(?sectiontName),?searchTerm)
+            || REGEX(LCASE(?businessElementName),?searchTerm) || REGEX(LCASE(?systemName),?searchTerm)
+            || REGEX(LCASE(LCASE(?tableName)),?searchTerm) || REGEX(LCASE(?fieldName),?searchTerm)
+            || REGEX(LCASE(?system1Name),?searchTerm) || REGEX(LCASE(LCASE(?table1Name)),?searchTerm) 
+            || REGEX(LCASE(?field1Name),?searchTerm))`: ``}
+            ${searchUri.trim() !== '' ? `BIND(${searchUri} AS ?searchUri)
+              FILTER(?report=?searchUri || ?section=?searchUri || ?businessElement=?searchUri
+              || ?system=?searchUri || ?table=?searchUri || ?field=?searchUri
+              || ?system1=?searchUri || ?table1=?searchUri || ?field1=?searchUri)`: ``}
           }
-          `),
+          `;
+
+          // console.log(`| metricQuery:`, metricQuery);
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+
+      // Retrieve metrics data
+      try {
+        const response = await axios.post(
+          STARDOG_URL,
+          'query=' + encodeURIComponent(metricQuery),
           {
             auth: {
               username: STARDOG_USERNAME,
@@ -150,9 +173,9 @@ GROUP BY ?system ?systemName ?systemType
             businessElementCount: Number(res.businessElementCount.value),
             systemCount: Number(res.systemCount.value),
             fieldCount: Number(res.fieldCount.value),
-            depthMax: Number(res.depthMax.value),
-            stepCount: Number(res.stepCount.value),
-            dataMovementCount: Number(res.dataMovementCount.value),
+            // depthMax: Number(res.depthMax.value),
+            // stepCount: Number(res.stepCount.value),
+            // dataMovementCount: Number(res.dataMovementCount.value),
           };
           setMetricData(metricsObj);
         } else {
@@ -180,7 +203,7 @@ GROUP BY ?system ?systemName ?systemType
         );
 
         if (response.data.results && response.data.results.bindings) {
-          const resultBindings = response.data.results.bindings??[];
+          const resultBindings = response.data.results.bindings ?? [];
           nodesArr = resultBindings.filter(res => ((res.system?.value ?? '') !== '')).map((res, idx) => ({
             id: res.system.value, type: 'system',
             systemType: res.systemType.value,
@@ -242,7 +265,7 @@ GROUP BY ?system ?systemName ?systemType
         );
 
         if (response.data.results && response.data.results.bindings) {
-          const resultBindings = response.data.results.bindings??[];
+          const resultBindings = response.data.results.bindings ?? [];
           edgesArr = resultBindings.map(res => ({
             id: res.edge.value + res.origin.value + res.destination.value,
             source: res.origin.value, target: res.destination.value,
@@ -281,20 +304,16 @@ GROUP BY ?system ?systemName ?systemType
       let numberOfSystems = nodesArr.length;
       // const systemsById = new Map(); // Used to quickly look up data on nodes during loops
 
-      for (let i = 0; i < nodesArr.length; i++)
-      {
-        if (nodesArr[i].id === null || nodesArr[i].id === undefined)
-        {
+      for (let i = 0; i < nodesArr.length; i++) {
+        if (nodesArr[i].id === null || nodesArr[i].id === undefined) {
           continue; // Should not be possible, but prevents errors for bad data.
         }
 
         systemsById.set(nodesArr[i].id, nodesArr[i]);
       }
 
-      for (let i = 0; i < nodesArr.length; i++)
-      {
-        if (nodesArr[i].id === null || nodesArr[i].id === undefined)
-        {
+      for (let i = 0; i < nodesArr.length; i++) {
+        if (nodesArr[i].id === null || nodesArr[i].id === undefined) {
           continue; // Should not be possible, but prevents errors for bad data.
         }
         nodesArr[i].data.hasOutgoingEdges = hasOutgoingEdges(nodesArr[i].id);
@@ -313,26 +332,22 @@ GROUP BY ?system ?systemName ?systemType
 
       // Currently unused, but kept here for convenience in case it is needed later
       const isSourceSystemById = (id) => {
-        if(!systemsById.has(id))
-          {
-            return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
-          }
+        if (!systemsById.has(id)) {
+          return false; // Error handling if we check an ID we do not recognize; shouldn't be possible
+        }
 
-          return isSourceSystem(systemsById.get(id));
+        return isSourceSystem(systemsById.get(id));
       };
 
       // Assign an index for levels of derivation
       // Start with source systems
-      for (let i = 0; i < nodesArr.length; i++)
-      {
-        if (isReport(nodesArr[i]))
-        {
+      for (let i = 0; i < nodesArr.length; i++) {
+        if (isReport(nodesArr[i])) {
           numberOfSystems--; // Reports will be checked last, so don't include them in the total count
           continue;
         }
 
-        if (!isSourceSystem(nodesArr[i]))
-        {
+        if (!isSourceSystem(nodesArr[i])) {
           continue;
         }
 
@@ -348,25 +363,20 @@ GROUP BY ?system ?systemName ?systemType
 
       // Assign indices until every system has been assigned
       // This loop is potentially infinite, so including an upper limit to ensure we break it. (This is fragile.)
-      while(indexedSystems.length < numberOfSystems
-            && currentAttempts < maxAttempts)
-      {
+      while (indexedSystems.length < numberOfSystems
+        && currentAttempts < maxAttempts) {
         currentAttempts++;
         skipList = [];
-        for (let i = 0; i < edgesArr.length; i++)
-        {
+        for (let i = 0; i < edgesArr.length; i++) {
           if (indexedSystems.includes(edgesArr[i].target)
             || !indexedSystems.includes(edgesArr[i].source)
-            || isReportById(edgesArr[i].target))
-          {
+            || isReportById(edgesArr[i].target)) {
             skipList.push(edgesArr[i].target);
           }
         }
 
-        for (let i = 0; i < edgesArr.length; i++)
-        {
-          if (skipList.includes(edgesArr[i].target))
-          {
+        for (let i = 0; i < edgesArr.length; i++) {
+          if (skipList.includes(edgesArr[i].target)) {
             continue;
           }
 
@@ -376,17 +386,14 @@ GROUP BY ?system ?systemName ?systemType
           sourceNode = systemsById.get(edgesArr[i].source);
           targetNode = systemsById.get(edgesArr[i].target);
 
-          if (sourceNode != null && targetNode != null)
-          {
+          if (sourceNode != null && targetNode != null) {
             currentDerivationIndex = sourceNode.derivationIndex + 1;
-            if (highestIndex < currentDerivationIndex)
-            {
+            if (highestIndex < currentDerivationIndex) {
               highestIndex = currentDerivationIndex;
             }
 
             targetNode.derivationIndex = Math.max(currentDerivationIndex, targetNode.derivationIndex);
-            if (!indexedSystems.includes(targetNode.id))
-            {
+            if (!indexedSystems.includes(targetNode.id)) {
               indexedSystems.push(targetNode.id);
             }
           }
@@ -397,17 +404,14 @@ GROUP BY ?system ?systemName ?systemType
 
       // Assign an index to reports last.
       // Similar to the above logic, but only looking for reports.
-      for (let i = 0; i < edgesArr.length; i++)
-      {
-        if (!isReportById(edgesArr[i].target))
-        {
+      for (let i = 0; i < edgesArr.length; i++) {
+        if (!isReportById(edgesArr[i].target)) {
           continue;
         }
 
         nextReport = systemsById.get(edgesArr[i].target);
 
-        if (nextReport !== null)
-        {
+        if (nextReport !== null) {
           nextReport.derivationIndex = highestIndex + 1;
         }
       }
@@ -417,10 +421,8 @@ GROUP BY ?system ?systemName ?systemType
 
       let countByIndex = new Map();
 
-      for (let i = 0; i < nodesArr.length; i++)
-      {
-        if (!countByIndex.has(nodesArr[i].derivationIndex))
-        {
+      for (let i = 0; i < nodesArr.length; i++) {
+        if (!countByIndex.has(nodesArr[i].derivationIndex)) {
           countByIndex.set(nodesArr[i].derivationIndex, 0);
         }
 
@@ -430,17 +432,14 @@ GROUP BY ?system ?systemName ?systemType
       }
 
       // Choose which source handle an edge should use based on whether it feeds into a report or a system
-      for (let i = 0; i < edgesArr.length; i++)
-      {
+      for (let i = 0; i < edgesArr.length; i++) {
         // console.log(isReportById(edgesArr[i].target));
-        if (isReportById(edgesArr[i].target))
-        {
+        if (isReportById(edgesArr[i].target)) {
           edgesArr[i].sourceHandle = "a";
           edgesArr[i].targetHandle = "left";
         }
-        else
-        {
-          if (!isSourceSystemById(edgesArr[i].source)){
+        else {
+          if (!isSourceSystemById(edgesArr[i].source)) {
             edgesArr[i].targetHandle = "top";
           }
           else {
