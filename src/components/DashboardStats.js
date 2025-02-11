@@ -9,15 +9,13 @@ const DashboardStats = ({ metricData }) => {
     setStatsData([
       { icon: '💻', label: 'Systems', value: metricData?.systemCount ?? 0, color: '#3283bd' },
       { icon: '📊', label: 'Reports', value: metricData?.reportCount ?? 0, color: '#6bb0d6' },
-      { icon: '⚙️', label: 'Depth', value: metricData?.depthMax ?? 0, color: '#9dcae1' },
       { icon: '📂', label: 'Data Elements', value: metricData?.fieldCount ?? 0, color: '#3283bd' },
       { icon: '📋', label: 'Line Items', value: metricData?.businessElementCount ?? 0, color: '#6bb0d6' },
-      { icon: '📚', label: 'Steps', value: metricData?.stepCount ?? 0, color: '#9dcae1' },
     ]);
   }, [metricData]);
 
   return (
-    <div className="dashboard-stats-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', padding: '20px' }}>
+    <div className="dashboard-stats-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', padding: '20px' }}>
       {statsData.map((stat, index) => (
         <div
           key={index}
